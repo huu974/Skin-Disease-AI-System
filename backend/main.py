@@ -24,6 +24,11 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.path_tool import get_abs_path
+from model.classification_factory import (
+    SUPPORTED_CLASSIFICATION_MODELS,
+    create_classification_model,
+    find_checkpoint_path,
+)
 from agent.multi_agent_manager import MultiAgentManager
 
 app = FastAPI(title="皮肤病智能诊断系统 API", version="1.0.0")
@@ -113,39 +118,39 @@ CLASS_NAMES = [
 ]
 
 # 加载模型
-model = None
+classification_models = {}
 
-def load_classification_model():
-    global model
+def load_classification_model(model_name: str = "efficientnet_b3"):
     try:
-        from model.custom_skin_net import CustomSkinNet
-        model_path = get_abs_path("variables/efficientnet_b3/best_model.pth.tar")
-        
-        print(f"加载模型: {model_path}")
-        
-        model = CustomSkinNet(
-            num_classes=23,
-            width_coef=1.5,
-            depth_coef=1.4,
-            pretrained=False
-        )
-        
+        if model_name not in SUPPORTED_CLASSIFICATION_MODELS:
+            raise ValueError(f"不支持的模型: {model_name}")
+        if model_name in classification_models:
+            return classification_models[model_name]
+
+        model_path = find_checkpoint_path(model_name)
+
+        print(f"加载模型 [{model_name}]: {model_path}")
+
+        model = create_classification_model(model_name, num_classes=23, pretrained=False)
         checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
         model.load_state_dict(checkpoint["model_state_dict"])
         model.eval()
-        
-        print("模型加载成功")
+
+        classification_models[model_name] = model
+        print(f"模型加载成功: {model_name}")
+        return model
     except Exception as e:
-        print(f"模型加载失败: {e}")
+        print(f"模型加载失败 [{model_name}]: {e}")
         import traceback
         traceback.print_exc()
-        model = None
+        return None
 
 load_classification_model()
 
 # 图像预处理（与 agent_tools.py 一致）
 transform = transforms.Compose([
-    transforms.Resize((300, 300)),
+    transforms.Resize((256, 256)),
+    transforms.CenterCrop((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
@@ -178,14 +183,17 @@ async def detect_and_classify(
             tmp.write(content)
             tmp_path = tmp.name
 
+        selected_model_name = classification_model or "efficientnet_b3"
+        selected_model = load_classification_model(selected_model_name)
+
         # 使用模型进行分类
-        if model is not None:
+        if selected_model is not None:
             try:
                 img = Image.open(tmp_path).convert('RGB')
                 img_tensor = transform(img).unsqueeze(0)
                 
                 with torch.no_grad():
-                    outputs = model(img_tensor)
+                    outputs = selected_model(img_tensor)
                     probs = torch.softmax(outputs, dim=1)[0]
                     
                 # 获取 Top-5
@@ -212,7 +220,7 @@ async def detect_and_classify(
         result = {
             "cropped_regions": [tmp_path],
             "classification": {
-                "model_used": classification_model,
+                "model_used": selected_model_name,
                 "top1": {
                     "class": primary_class,
                     "probability": round(primary_prob, 4)

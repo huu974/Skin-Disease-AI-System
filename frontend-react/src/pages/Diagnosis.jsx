@@ -98,6 +98,7 @@ export default function Diagnosis() {
     try {
       const formData = new FormData()
       formData.append('image', imageFile)
+      formData.append('classification_model', model)
 
       const response = await axios.post('http://localhost:8000/api/detect', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -114,7 +115,7 @@ export default function Diagnosis() {
         top5: response.data.classification?.top5,
         primary_disease: response.data.classification?.top1?.class,
         primary_confidence: response.data.classification?.top1?.probability,
-        model_used: response.data.classification?.model_used || 'efficientnet_b3',
+        model_used: response.data.classification?.model_used || model,
         timestamp: new Date().toLocaleString(),
         image_name: imageFile?.name || 'uploaded_image.jpg',
       })
@@ -134,7 +135,7 @@ export default function Diagnosis() {
         top5: mockResult.top5,
         primary_disease: mockResult.top1.class,
         primary_confidence: mockResult.top1.probability,
-        model_used: 'efficientnet_b3',
+        model_used: model,
         timestamp: new Date().toLocaleString(),
         image_name: imageFile?.name || 'uploaded_image.jpg',
       })
@@ -160,11 +161,14 @@ export default function Diagnosis() {
               <Row gutter={16}>
                 <Col span={12}>
                   <Select
-                    value="custom_skin_net"
-                    disabled
+                    value={model}
+                    onChange={setModel}
                     style={{ width: '100%' }}
                   >
+                    <Option value="convnext_tiny">ConvNeXt-Tiny</Option>
+                    <Option value="efficientnet_b3">EfficientNet-B3</Option>
                     <Option value="custom_skin_net">Custom Skin Net</Option>
+                    <Option value="resnet50">ResNet50</Option>
                   </Select>
                 </Col>
               </Row>

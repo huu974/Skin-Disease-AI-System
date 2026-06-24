@@ -29,6 +29,7 @@
 │   ├── PanDerm.py           # EfficientNet-B3皮肤病分类模型
 │   ├── ResNet50.py          # ResNet50分类模型
 │   ├── custom_skin_net.py   # 自定义皮肤病网络(CBAM)
+│   ├── ConvNeXtTiny.py      # ConvNeXt-Tiny分类模型
 │   └── factory.py           # 模型工厂
 │
 ├── utils/                    # 工具函数
@@ -135,11 +136,13 @@ pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web
 ### 模型训练
 ```bash
 python main.py --val True
+python main.py --model convnext_tiny --val True
 ```
 
 ### 模型评估
 ```bash
 python evaluate.py
+python evaluate.py --model convnext_tiny
 ```
 
 ### 模型效果测试

@@ -5,11 +5,8 @@ import os
 import torch
 import torch.backends.cudnn as cudnn
 from torch import nn
-from torchvision.models import EfficientNet_B3_Weights, efficientnet_b3
 
-from model.PanDerm import MyModel
-from model.ResNet50 import ResNet50Classifier
-from model.custom_skin_net import CustomSkinNet
+from model.classification_factory import create_classification_model
 from train_validation import tra_val
 from utils.arguments import parse
 from utils.config_handler import model_conf
@@ -21,21 +18,7 @@ from utils.writer import init_writer
 
 
 def create_model(model_name: str):
-    if model_name == "resnet50":
-        return ResNet50Classifier(num_classes=model_conf["num_classes"], pretrained=True)
-
-    if model_name == "efficientnet_b3":
-        backbone = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
-        return MyModel(model=backbone, num_classes=model_conf["num_classes"]).model_classifier()
-
-    if model_name == "custom_skin_net":
-        return CustomSkinNet(
-            num_classes=model_conf["num_classes"],
-            width_coef=1.5,
-            pretrained=False,
-        )
-
-    raise ValueError(f"Unsupported model: {model_name}")
+    return create_classification_model(model_name, num_classes=model_conf["num_classes"], pretrained=True)
 
 
 def main():

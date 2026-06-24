@@ -1,5 +1,8 @@
 classification_model: "variables/efficientnet_b3/best_model.pth.tar"
-classification_model_custom: "variables/efficientnet_b3/best_model.pth.tar"
+classification_model_custom: "variables/custom_skin_net/best_model.pth.tar"
+classification_model_custom_skin_net: "variables/custom_skin_net/best_model.pth.tar"
+classification_model_convnext_tiny: "variables/convnext_tiny/best_model.pth.tar"
+classification_model_resnet50: "variables/resnet50/best_model.pth.tar"
 batch_size: 16
 
 test_data: "skin diseases/test"

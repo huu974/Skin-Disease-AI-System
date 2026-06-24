@@ -1,7 +1,4 @@
-"""
-分类模型评估脚本
-支持评估 EfficientNet-B3、ResNet50、CustomSkinNet
-"""
+"""Classification model evaluation script."""
 
 import os
 import argparse
@@ -20,10 +17,11 @@ from sklearn.metrics import (
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
-from model.PanDerm import MyModel
-from model.ResNet50 import ResNet50Classifier
-from model.custom_skin_net import CustomSkinNet
+from model.classification_factory import (
+    SUPPORTED_CLASSIFICATION_MODELS,
+    create_classification_model,
+    find_checkpoint_path,
+)
 from utils.config_handler import model_conf
 from utils.config_handler import test_evaluate_conf
 
@@ -85,42 +83,13 @@ def plot_confusion_matrix(cm, classes, save_path='confusion_matrix.png'):
 
 
 def create_model(model_name, num_classes):
-    """根据模型名称创建模型"""
-    os.environ['TORCH_HOME'] = os.path.join(os.path.dirname(__file__), model_conf["save_path"])
-    
-    if model_name == 'efficientnet_b3':
-        model = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
-        xiaohui = MyModel(model=model, num_classes=num_classes)
-        return xiaohui.model_classifier()
-    
-    elif model_name == 'resnet50':
-        return ResNet50Classifier(num_classes=num_classes, pretrained=True)
-    
-    elif model_name == 'efficientnet_b3':
-        return CustomSkinNet(
-            num_classes=num_classes,
-            width_coef=1.5,
-            pretrained=False
-        )
-    
-    else:
-        raise ValueError(f"不支持的模型: {model_name}")
+    """Create a model by name."""
+    return create_classification_model(model_name, num_classes=num_classes, pretrained=False)
 
 
 def get_model_path(model_name):
-    """根据模型名称获取模型权重路径"""
-    base_path = './variables'
-    model_dir = os.path.join(base_path, model_name)
-    best_model = os.path.join(model_dir, 'best_model.pth.tar')
-    
-    if os.path.exists(best_model):
-        return best_model
-    
-    fallback = os.path.join(base_path, 'best_model.pth.tar')
-    if os.path.exists(fallback):
-        return fallback
-    
-    return best_model
+    """Get the checkpoint path for a model."""
+    return find_checkpoint_path(model_name)
 
 
 
@@ -178,7 +147,7 @@ def main(model_name):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='皮肤病分类模型评估')
     parser.add_argument('--model', type=str, default='efficientnet_b3',
-                        choices=['efficientnet_b3', 'resnet50', 'efficientnet_b3'],
+                        choices=SUPPORTED_CLASSIFICATION_MODELS,
                         help='模型名称')
     args = parser.parse_args()
     

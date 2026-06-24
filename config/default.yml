@@ -4,6 +4,7 @@ datapath-val: ./skin diseases/val
 datapath-test: ./skin diseases/test
 
 # 训练参数
+model: efficientnet_b3
 batch-size: 16
 num-workers: 8
 channels-last: true

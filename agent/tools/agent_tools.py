@@ -7,6 +7,7 @@ from langchain_core.tools import tool
 from rag.enhanced_rag import EnhancedRAGService
 import torch
 from utils.config_handler import model_conf
+from model.classification_factory import create_classification_model, find_checkpoint_path
 import os
 from PIL import Image
 import torchvision.transforms as transforms
@@ -14,29 +15,27 @@ import datetime
 
 
 
-classifier_model = None
+classifier_models = {}
 rag_service = None
 
 
 
 #加载分类模型
-def get_classifier_model():
-    global classifier_model
-    if classifier_model is None:
-        from model.custom_skin_net import CustomSkinNet
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        model_path = os.path.join(project_root, "variables", "efficientnet_b3", "best_model.pth.tar")
-        logger.info(f"[分类] 加载自定义模型: {model_path}")
-        classifier_model = CustomSkinNet(
+def get_classifier_model(model_name: str = "efficientnet_b3"):
+    global classifier_models
+    if model_name not in classifier_models:
+        model_path = find_checkpoint_path(model_name)
+        logger.info(f"[分类] 加载模型 {model_name}: {model_path}")
+        classifier_model = create_classification_model(
+            model_name,
             num_classes=model_conf["num_classes"],
-            width_coef=1.5,
-            depth_coef=1.4,
-            pretrained=False
+            pretrained=False,
         )
         checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
         classifier_model.load_state_dict(checkpoint["model_state_dict"])
         classifier_model.eval()
-    return classifier_model
+        classifier_models[model_name] = classifier_model
+    return classifier_models[model_name]
 
 
 
@@ -71,7 +70,8 @@ def skin_classify(image_path: str) -> str:
         
         # 图像预处理
         transform = transforms.Compose([
-            transforms.Resize((300, 300)),
+            transforms.Resize((256, 256)),
+            transforms.CenterCrop((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])

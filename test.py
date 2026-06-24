@@ -2,14 +2,18 @@
 模型测试脚本
 """
 
+import argparse
 import os
 import random
 import torch
 import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
-from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
-from model.PanDerm import MyModel
+from model.classification_factory import (
+    SUPPORTED_CLASSIFICATION_MODELS,
+    create_classification_model,
+    find_checkpoint_path,
+)
 from utils.config_handler import model_conf
 from utils.config_handler import test_evaluate_conf
 
@@ -59,29 +63,17 @@ def test_classifier(image_path,model_name='efficientnet_b3'):
     print('开始测试分类模型...')
     device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-    # 根据模型名称加载分类模型
-    if model_name == 'resnet50':
-        from model.ResNet50 import ResNet50Classifier
-        model = ResNet50Classifier(num_classes=model_conf["num_classes"], pretrained=False)
-    elif model_name == 'efficientnet_b3':
-        model = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1)
-        xiaohui = MyModel(model=model, num_classes=model_conf["num_classes"])
-        model = xiaohui.model_classifier().to(device)
-        checkpoint = torch.load(test_evaluate_conf['classification_model'], map_location=device)
-        model.load_state_dict(checkpoint['model_state_dict'])
-    elif model_name == 'efficientnet_b3':
-        from model.custom_skin_net import CustomSkinNet
-        model = CustomSkinNet(
-            num_classes=model_conf["num_classes"],
-            width_coef=1.5,
-            depth_coef=1.4,
-            pretrained=False
-        ).to(device)
-        checkpoint = torch.load("variables/efficientnet_b3/best_model.pth.tar", map_location=device, weights_only=False)
-        model.load_state_dict(checkpoint['model_state_dict'])
-    else:
+    if model_name not in SUPPORTED_CLASSIFICATION_MODELS:
         raise ValueError(f"不支持的模型: {model_name}")
+
+    model = create_classification_model(
+        model_name,
+        num_classes=model_conf["num_classes"],
+        pretrained=False,
+    ).to(device)
+    checkpoint_path = find_checkpoint_path(model_name)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    model.load_state_dict(checkpoint['model_state_dict'])
 
 
     model = model.to(device)
@@ -115,6 +107,16 @@ def test_classifier(image_path,model_name='efficientnet_b3'):
 
 
 if __name__ == '__main__':
+     parser = argparse.ArgumentParser(description='皮肤病分类模型单图测试')
+     parser.add_argument(
+         '--model',
+         type=str,
+         default='efficientnet_b3',
+         choices=SUPPORTED_CLASSIFICATION_MODELS,
+         help='模型名称'
+     )
+     args = parser.parse_args()
+
      device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
      print(f'使用设备：{device}')
 
@@ -126,7 +128,7 @@ if __name__ == '__main__':
 
 
 
-     models = ['efficientnet_b3', 'efficientnet_b3']
+     models = [args.model]
      results = {}
 
      for model_name in models:

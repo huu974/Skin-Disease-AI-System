@@ -6,6 +6,8 @@ from pathlib import Path
 
 import yaml
 
+from model.classification_factory import SUPPORTED_CLASSIFICATION_MODELS
+
 
 def str2bool(value):
     if isinstance(value, bool):
@@ -31,7 +33,13 @@ def parse():
     parser = argparse.ArgumentParser(description="Skin diseases image classification")
 
     parser.add_argument("--config", default="config/default.yml", type=str, help="YAML config path")
-    parser.add_argument("--model", default="efficientnet_b3", type=str, help="model name")
+    parser.add_argument(
+        "--model",
+        default="efficientnet_b3",
+        choices=SUPPORTED_CLASSIFICATION_MODELS,
+        type=str,
+        help="model name",
+    )
 
     parser.add_argument("--datapath-train", default="./skin diseases/train-new", type=str, help="training dataset path")
     parser.add_argument("--val", default=False, type=str2bool, help="enable validation dataloader")

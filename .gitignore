@@ -68,6 +68,10 @@ chroma_db/
 data/
 skin diseases/
 model/
+!model/
+model/*
+!model/ConvNeXtTiny.py
+!model/classification_factory.py
 variables/
 *.pt
 *.pth
