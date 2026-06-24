@@ -38,6 +38,7 @@ def parse():
     parser.add_argument("--datapath-val", default="./skin diseases/val", type=str, help="validation dataset path")
     parser.add_argument("--datapath-test", default="./skin diseases/test", type=str, help="test dataset path")
     parser.add_argument("--batch-size", default=16, type=int, help="batch size")
+    parser.add_argument("--num-workers", default=8, type=int, help="dataloader worker processes")
     parser.add_argument("--channels-last", default=True, type=str2bool, help="use channels_last memory format")
     parser.add_argument("--save-path", default="./variables", type=str, help="checkpoint output directory")
     parser.add_argument("--device", default="auto", type=str, help="training device: auto / cpu / cuda:0 / 0 / mlu:0")

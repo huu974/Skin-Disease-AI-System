@@ -113,13 +113,23 @@ val_transform = transforms.Compose([
 # 获取加载器
 def get_train_dataloader(args):
     datasets = ImageFolder(root=args.datapath_train, transform=train_transform)
-    return  DataLoader(datasets, batch_size=args.batch_size, shuffle=True)
+    return DataLoader(
+        datasets,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+    )
 
 
 def get_val_dataloader(args):
     if args.val:
         datasets = ImageFolder(root=args.datapath_val, transform=val_transform)
-        return DataLoader(datasets, batch_size=args.batch_size, shuffle=False)
+        return DataLoader(
+            datasets,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
+        )
     return None
 
 
@@ -134,7 +144,3 @@ if __name__ == '__main__':
         print(images.shape)
         print(labels.shape)
         break
-
-
-
-

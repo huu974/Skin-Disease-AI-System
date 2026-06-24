@@ -5,6 +5,7 @@ datapath-test: ./skin diseases/test
 
 # 训练参数
 batch-size: 16
+num-workers: 8
 channels-last: true
 save-path: ./variables
 device: auto

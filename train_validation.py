@@ -52,13 +52,6 @@ class tra_val(object):
             steps_per_epoch=steps_per_epoch,
         )
 
-    def _move_batch(self, input, target):
-        if self.args.channels_last:
-            input = input.to(memory_format=torch.channels_last)
-        input = input.to(self.device, non_blocking=True)
-        target = target.to(self.device, non_blocking=True)
-        return input, target
-
     def train(self, epoch):
         self.epoch = epoch
         self.losses_tr = AverageMeter()
