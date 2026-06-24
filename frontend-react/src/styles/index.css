@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background-color: #F8FAFC;
+  color: #1E293B;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* 动画类 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+/* 卡片悬浮效果 */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* 对话气泡样式 */
+.chat-bubble-user {
+  background: linear-gradient(135deg, #165DFF 0%, #4080FF 100%);
+  color: white;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 16px;
+  max-width: 80%;
+}
+
+.chat-bubble-ai {
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px 18px 18px 4px;
+  padding: 12px 16px;
+  max-width: 80%;
+}
+
+/* 进度条渐变 */
+.progress-gradient {
+  background: linear-gradient(90deg, #165DFF 0%, #36CFC9 100%);
+}
+
+/* 风险等级颜色 */
+.risk-high {
+  color: #F53F3F;
+  background: #FFF1F0;
+}
+
+.risk-medium {
+  color: #FF7D00;
+  background: #FFF7E6;
+}
+
+.risk-low {
+  color: #2E7D32;
+  background: #F6FFED;
+}
+
+/* 科技感背景 */
+.tech-bg {
+  background: 
+    linear-gradient(rgba(22, 93, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 93, 255, 0.03) 1px, transparent 1px),
+    #F8FAFC;
+  background-size: 40px 40px;
+}

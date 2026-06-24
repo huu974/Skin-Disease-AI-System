@@ -1,0 +1,36 @@
+{
+  "name": "skin-disease-ai-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智肤康·皮肤疾病AI全流程辅助诊疗系统",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext js,jsx"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "antd": "^5.12.0",
+    "@ant-design/icons": "^5.2.6",
+    "axios": "^1.6.2",
+    "echarts": "^5.4.3",
+    "echarts-for-react": "^3.0.2",
+    "react-easy-crop": "^5.0.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "dayjs": "^1.11.10",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.2"
+  }
+}

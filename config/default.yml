@@ -1,0 +1,19 @@
+# 数据路径
+datapath-train: ./skin diseases/train-new
+datapath-val: ./skin diseases/val
+datapath-test: ./skin diseases/test
+
+# 训练参数
+batch-size: 16
+channels-last: true
+save-path: ./variables
+
+# 优化器
+optimizer: Adam
+epochs: 100
+lr: 0.001
+weight-decay: 0.001
+
+# 日志
+logterminal: true
+resume: ''
