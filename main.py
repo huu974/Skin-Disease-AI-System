@@ -1,8 +1,6 @@
 """Training entry point for skin disease classification."""
 
 import os
-import signal
-import sys
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -20,19 +18,6 @@ from utils.device import device_summary, resolve_device
 from utils.optimizer_Adam import CustomAdam
 from utils.outputwriter import OutputSave
 from utils.writer import init_writer
-
-
-class InterruptHandler:
-    def __init__(self, saver):
-        self.saver = saver
-        self.current_epoch = 0
-
-    def handler(self, signum, frame):
-        print("\nDetected Ctrl+C, saving checkpoint...")
-        self.saver.save_checkpoint(self.current_epoch)
-        print(f"Checkpoint saved to {self.saver.args.save_path}")
-        print("Use --resume next time to continue training.")
-        sys.exit(0)
 
 
 def create_model(model_name: str):
@@ -94,14 +79,10 @@ def main():
         no_improve_epochs = saver.no_improve_epochs
         print(f"Resume training from epoch {start_epoch}")
 
-    handler = InterruptHandler(saver)
-    signal.signal(signal.SIGINT, handler.handler)
-
     trainer = tra_val(model, criterion, optimizer, scaler, args, train_dataloader, None, writer, device)
     validator = tra_val(model, criterion, optimizer, scaler, args, None, val_dataloader, writer, device)
 
     for epoch in range(start_epoch, args.epochs):
-        handler.current_epoch = epoch
         trainer.train(epoch)
 
         top1 = None
