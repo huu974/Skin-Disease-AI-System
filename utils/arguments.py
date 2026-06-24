@@ -59,6 +59,22 @@ def parse():
     parser.add_argument("--optimizer", default="Adam", type=str, help="optimizer type")
     parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
     parser.add_argument("--lr", default=1e-3, type=float, help="initial learning rate")
+    parser.add_argument(
+        "--loss",
+        default="cross_entropy",
+        choices=("cross_entropy", "class_balanced"),
+        type=str,
+        help="training loss function",
+    )
+    parser.add_argument(
+        "--cb-loss-type",
+        default="focal",
+        choices=("focal", "sigmoid", "softmax", "cross_entropy"),
+        type=str,
+        help="base loss used by class-balanced loss",
+    )
+    parser.add_argument("--cb-beta", default=0.9999, type=float, help="class-balanced loss beta")
+    parser.add_argument("--cb-gamma", default=2.0, type=float, help="class-balanced focal gamma")
 
     parser.add_argument("--logterminal", default=True, type=str2bool, help="mirror logs to terminal")
     parser.add_argument("--resume", default="", type=str, help="checkpoint path for resuming training")

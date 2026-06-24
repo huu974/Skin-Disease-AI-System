@@ -4,7 +4,6 @@ import os
 
 import torch
 import torch.backends.cudnn as cudnn
-from torch import nn
 
 from model.classification_factory import create_classification_model
 from train_validation import tra_val
@@ -12,6 +11,7 @@ from utils.arguments import parse
 from utils.config_handler import model_conf
 from utils.dataset import get_train_dataloader, get_val_dataloader
 from utils.device import device_summary, resolve_device
+from utils.losses import build_loss
 from utils.optimizer_Adam import CustomAdam
 from utils.outputwriter import OutputSave
 from utils.writer import init_writer
@@ -41,7 +41,7 @@ def main():
     args.save_path = os.path.join(args.save_path, model_name)
 
     model = create_model(model_name).to(device)
-    criterion = nn.CrossEntropyLoss()
+    criterion = build_loss(args, train_dataloader.dataset, model_conf["num_classes"]).to(device)
     optimizer = CustomAdam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp) if device.type == "cuda" else None
     saver = OutputSave(model, args, optimizer)

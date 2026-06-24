@@ -137,6 +137,7 @@ pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web
 ```bash
 python main.py --val True
 python main.py --model convnext_tiny --val True
+python main.py --model convnext_tiny --loss class_balanced --cb-loss-type focal --cb-beta 0.9999 --cb-gamma 2.0 --val True
 ```
 
 ### 模型评估

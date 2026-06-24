@@ -20,6 +20,10 @@ optimizer: Adam
 epochs: 100
 lr: 0.001
 weight-decay: 0.001
+loss: cross_entropy
+cb-loss-type: focal
+cb-beta: 0.9999
+cb-gamma: 2.0
 
 # 日志
 logterminal: true
