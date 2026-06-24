@@ -3,10 +3,10 @@
 """
 
 import sys, os
-import torch
 from utils.logger import Logger
 from torch.utils.tensorboard import SummaryWriter
 import time
+from utils.device import device_summary, resolve_device
 
 
 # 初始化日志记录器和TensorBoard写入器
@@ -19,7 +19,7 @@ def init_writer(args):
 
     #设置日志输出到文件
     sys.stdout = Logger(logfile, args.logterminal)
-    
+
     #打印所有配置参数
     for arg in vars(args):
         print(f"{arg}: {getattr(args, arg)}")
@@ -31,11 +31,9 @@ def init_writer(args):
     #创建TensorBoard写入器
     writer = SummaryWriter(log_dir=logdir)
 
-    # 打印分布式训练信息
-    if torch.cuda.is_available():
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
-        print(f"显存: {torch.cuda.get_device_properties(0).total_memory / 1024 ** 3:.1f} GB")
-    else:
-        print("使用 CPU")
-
+    # Print selected training device.
+    try:
+        print(device_summary(resolve_device(getattr(args, "device", "auto"))))
+    except Exception as exc:
+        print(f"device={getattr(args, 'device', 'auto')} unavailable: {exc}")
     return writer

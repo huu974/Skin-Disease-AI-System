@@ -55,7 +55,7 @@ transform = transforms.Compose([
 
 
 #1.测试分类模型
-def test_classifier(image_path,model_name='custom_skin_net'):
+def test_classifier(image_path,model_name='efficientnet_b3'):
     print('开始测试分类模型...')
     device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -70,7 +70,7 @@ def test_classifier(image_path,model_name='custom_skin_net'):
         model = xiaohui.model_classifier().to(device)
         checkpoint = torch.load(test_evaluate_conf['classification_model'], map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
-    elif model_name == 'custom_skin_net':
+    elif model_name == 'efficientnet_b3':
         from model.custom_skin_net import CustomSkinNet
         model = CustomSkinNet(
             num_classes=model_conf["num_classes"],
@@ -78,7 +78,7 @@ def test_classifier(image_path,model_name='custom_skin_net'):
             depth_coef=1.4,
             pretrained=False
         ).to(device)
-        checkpoint = torch.load("variables/custom_skin_net/best_model.pth.tar", map_location=device, weights_only=False)
+        checkpoint = torch.load("variables/efficientnet_b3/best_model.pth.tar", map_location=device, weights_only=False)
         model.load_state_dict(checkpoint['model_state_dict'])
     else:
         raise ValueError(f"不支持的模型: {model_name}")
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
 
 
-     models = ['efficientnet_b3', 'custom_skin_net']
+     models = ['efficientnet_b3', 'efficientnet_b3']
      results = {}
 
      for model_name in models:

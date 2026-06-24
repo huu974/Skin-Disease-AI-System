@@ -24,5 +24,5 @@ def get_abs_path(relative_path:str) -> str:
     return os.path.join(project_root, relative_path)
 
 if __name__ == '__main__':
-    #E:\py项目\Skin diseases\config\model.yaml
-    print(get_abs_path("config/model.yaml"))
+    # ./config/model.yml
+    print(get_abs_path("config/model.yml"))

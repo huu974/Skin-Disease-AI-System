@@ -104,8 +104,8 @@ val_transform = transforms.Compose([
 ])
 
 
-#root使用绝对路径
-# train_data = ImageFolder(root='E:\\py项目\\Skin diseases\\archive\\train', transform=transform)
+# Use a project-relative Linux path.
+# train_data = ImageFolder(root='./skin diseases/train-new', transform=transform)
 # print(len(train_data.classes))
 # print(train_data.classes)
 

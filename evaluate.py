@@ -42,6 +42,7 @@ def get_transforms():
 
 def load_checkpoint(model, checkpoint_path, device):
     checkpoint = torch.load(checkpoint_path, map_location=device,weights_only=False)
+
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     return model
@@ -95,11 +96,10 @@ def create_model(model_name, num_classes):
     elif model_name == 'resnet50':
         return ResNet50Classifier(num_classes=num_classes, pretrained=True)
     
-    elif model_name == 'custom_skin_net':
+    elif model_name == 'efficientnet_b3':
         return CustomSkinNet(
             num_classes=num_classes,
             width_coef=1.5,
-            depth_coef=1.4,
             pretrained=False
         )
     
@@ -156,8 +156,9 @@ def main(model_name):
     precision = precision_score(labels, preds, average='macro', zero_division=0)
     recall = recall_score(labels, preds, average='macro', zero_division=0)
     f1 = f1_score(labels, preds, average='macro')
-    
+    params = sum(p.numel() for p in model.parameters())
     print(f"\n========== 评估结果 ==========")
+    print(f"参数量 (parameters):{params}")
     print(f"准确率 (Accuracy):  {accuracy:.4f}")
     print(f"精确率 (Precision): {precision:.4f}")
     print(f"召回率 (Recall):    {recall:.4f}")
@@ -176,8 +177,8 @@ def main(model_name):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='皮肤病分类模型评估')
-    parser.add_argument('--model', type=str, default='resnet50',
-                        choices=['efficientnet_b3', 'resnet50', 'custom_skin_net'],
+    parser.add_argument('--model', type=str, default='efficientnet_b3',
+                        choices=['efficientnet_b3', 'resnet50', 'efficientnet_b3'],
                         help='模型名称')
     args = parser.parse_args()
     

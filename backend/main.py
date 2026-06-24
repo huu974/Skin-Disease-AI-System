@@ -119,10 +119,7 @@ def load_classification_model():
     global model
     try:
         from model.custom_skin_net import CustomSkinNet
-        
-        # project_root = "E:/py项目/Skin diseases"
-        # model_path = os.path.join(project_root, "variables", "custom_skin_net", "best_model.pth.tar")
-        model_path = get_abs_path("variables/custom_skin_net/best_model.pth.tar")
+        model_path = get_abs_path("variables/efficientnet_b3/best_model.pth.tar")
         
         print(f"加载模型: {model_path}")
         
@@ -171,7 +168,7 @@ async def health_check():
 @app.post("/api/detect")
 async def detect_and_classify(
     image: UploadFile = File(...),
-    classification_model: Optional[str] = Form(default="custom_skin_net")
+    classification_model: Optional[str] = Form(default="efficientnet_b3")
 ):
 
     try:

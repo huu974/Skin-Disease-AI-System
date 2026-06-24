@@ -114,7 +114,7 @@ export default function Diagnosis() {
         top5: response.data.classification?.top5,
         primary_disease: response.data.classification?.top1?.class,
         primary_confidence: response.data.classification?.top1?.probability,
-        model_used: response.data.classification?.model_used || 'custom_skin_net',
+        model_used: response.data.classification?.model_used || 'efficientnet_b3',
         timestamp: new Date().toLocaleString(),
         image_name: imageFile?.name || 'uploaded_image.jpg',
       })
@@ -134,7 +134,7 @@ export default function Diagnosis() {
         top5: mockResult.top5,
         primary_disease: mockResult.top1.class,
         primary_confidence: mockResult.top1.probability,
-        model_used: 'custom_skin_net',
+        model_used: 'efficientnet_b3',
         timestamp: new Date().toLocaleString(),
         image_name: imageFile?.name || 'uploaded_image.jpg',
       })

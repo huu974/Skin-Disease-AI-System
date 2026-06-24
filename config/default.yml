@@ -7,6 +7,8 @@ datapath-test: ./skin diseases/test
 batch-size: 16
 channels-last: true
 save-path: ./variables
+device: auto
+amp: true
 
 # 优化器
 optimizer: Adam

@@ -61,4 +61,4 @@ def split_dataset(source_dir, train_ratio=0.7, val_ratio=0.15):
 
 if __name__ == '__main__':
     # 修改为你的源目录路径
-    split_dataset(r'C:\Users\123\Desktop\demo\data')
+    split_dataset('data')

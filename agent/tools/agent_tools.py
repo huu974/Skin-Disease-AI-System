@@ -25,7 +25,7 @@ def get_classifier_model():
     if classifier_model is None:
         from model.custom_skin_net import CustomSkinNet
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        model_path = os.path.join(project_root, "variables", "custom_skin_net", "best_model.pth.tar")
+        model_path = os.path.join(project_root, "variables", "efficientnet_b3", "best_model.pth.tar")
         logger.info(f"[分类] 加载自定义模型: {model_path}")
         classifier_model = CustomSkinNet(
             num_classes=model_conf["num_classes"],
