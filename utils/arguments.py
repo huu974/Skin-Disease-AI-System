@@ -42,6 +42,9 @@ def parse():
     parser.add_argument("--save-path", default="./variables", type=str, help="checkpoint output directory")
     parser.add_argument("--device", default="auto", type=str, help="training device: auto / cpu / cuda:0 / 0 / mlu:0")
     parser.add_argument("--amp", default=True, type=str2bool, help="use CUDA automatic mixed precision")
+    parser.add_argument("--log-interval", default=100, type=int, help="print one training log line every N steps")
+    parser.add_argument("--patience", default=15, type=int, help="early stopping patience in validation epochs")
+    parser.add_argument("--min-delta", default=0.0, type=float, help="minimum validation Top1 improvement for early stopping")
 
     parser.add_argument("--weight-decay", "--wd", default=1e-3, type=float, help="weight decay")
     parser.add_argument("--optimizer", default="Adam", type=str, help="optimizer type")

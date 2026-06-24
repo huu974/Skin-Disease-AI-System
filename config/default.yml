@@ -9,6 +9,9 @@ channels-last: true
 save-path: ./variables
 device: auto
 amp: true
+log-interval: 100
+patience: 15
+min-delta: 0.0
 
 # 优化器
 optimizer: Adam

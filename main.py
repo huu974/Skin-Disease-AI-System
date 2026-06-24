@@ -80,12 +80,19 @@ def main():
     saver = OutputSave(model, args, optimizer)
 
     start_epoch = 0
+    best_early_stop_top1 = 0.0
+    no_improve_epochs = 0
     print(f"resume: {args.resume}")
     if args.resume:
         checkpoint = torch.load(args.resume, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         start_epoch = checkpoint["epoch"] + 1
+        saver.best_top1 = checkpoint.get("best_top1", 0.0)
+        saver.best_top5 = checkpoint.get("best_top5", 0.0)
+        saver.no_improve_epochs = checkpoint.get("no_improve_epochs", 0)
+        best_early_stop_top1 = saver.best_top1
+        no_improve_epochs = saver.no_improve_epochs
         print(f"Resume training from epoch {start_epoch}")
 
     handler = InterruptHandler(saver)
@@ -100,12 +107,27 @@ def main():
 
         top1 = None
         top5 = None
+        improved = False
         if val_dataloader is not None:
             _, top1, top5 = validator.validation(epoch)
+            improved = top1 > best_early_stop_top1 + args.min_delta
+            if improved:
+                best_early_stop_top1 = top1
+                no_improve_epochs = 0
+                saver.no_improve_epochs = no_improve_epochs
+                saver.update_best(top1, top5, epoch)
+            else:
+                no_improve_epochs += 1
 
+        saver.no_improve_epochs = no_improve_epochs
         saver.save_checkpoint(epoch)
         if top1 is not None and top5 is not None:
-            saver.update_best(top1, top5, epoch)
+            if no_improve_epochs >= args.patience:
+                print(
+                    f"Early stopping triggered after epoch {epoch + 1} "
+                    f"(no Top1 improvement for {no_improve_epochs} epochs, patience={args.patience})"
+                )
+                break
 
 
 if __name__ == "__main__":

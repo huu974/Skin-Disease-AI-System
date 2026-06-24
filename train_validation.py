@@ -1,10 +1,10 @@
 import time
 from contextlib import nullcontext
+from datetime import datetime
 
 import numpy as np
 import torch
 from torch import autocast
-from tqdm import tqdm
 
 from utils.dataset import mixup_cutmix_data
 from utils.lr_policy import LR
@@ -66,10 +66,12 @@ class tra_val(object):
         self.top5_tr = AverageMeter()
 
         self.model.train()
-        self.end_tr = time.time()
+        epoch_start = time.time()
+        total_step = len(self.train_loader)
+        log_interval = max(1, int(getattr(self.args, "log_interval", 100)))
 
-        for i, (input, target) in enumerate(tqdm(self.train_loader, desc=f"Training Epoch {self.epoch + 1}")):
-            self.lr = self.lr_policy.apply_lr(epoch, i)
+        for i, (input, target) in enumerate(self.train_loader, start=1):
+            self.lr = self.lr_policy.apply_lr(epoch, i - 1)
             self.assign_learning_rate(self.lr)
 
             input, target = self._move_batch(input, target)
@@ -108,7 +110,19 @@ class tra_val(object):
             self.loss = loss
             self.write_net_values(train=True)
 
-        print(f"Training completed | Top1: {self.top1_tr.avg:.2f}% | Top5: {self.top5_tr.avg:.2f}% | loss: {self.losses_tr.avg:.4f}")
+            if i % log_interval == 0 or i == total_step:
+                print(
+                    f"{datetime.now()} Epoch [{epoch + 1:03d}/{self.args.epochs:03d}], "
+                    f"Step [{i:04d}/{total_step:04d}], LR: {self.optimizer.param_groups[0]['lr']:.6f}, "
+                    f"Loss: {self.losses_tr.avg:.4f}, Top1: {self.top1_tr.avg:.2f}, Top5: {self.top5_tr.avg:.2f}"
+                )
+
+        elapsed = time.time() - epoch_start
+        print(
+            f"Epoch [{epoch + 1:03d}/{self.args.epochs:03d}] Train Summary: "
+            f"Loss: {self.losses_tr.avg:.4f}, Top1: {self.top1_tr.avg:.2f}, "
+            f"Top5: {self.top5_tr.avg:.2f}, Time: {elapsed:.2f}s"
+        )
 
     def validation(self, epoch):
         self.epoch = epoch
@@ -118,10 +132,10 @@ class tra_val(object):
         self.top5_ts = AverageMeter()
 
         self.model.eval()
-        self.end_ts = time.time()
+        epoch_start = time.time()
 
         with torch.no_grad():
-            for input, target in tqdm(self.val_loader, desc=f"Validation Epoch {self.epoch + 1}"):
+            for input, target in self.val_loader:
                 input, target = self._move_batch(input, target)
                 output = self.model(input)
                 loss = self.criterion(output, target)
@@ -132,12 +146,14 @@ class tra_val(object):
                 self.losses_ts.update(self.loss_ts.item(), input.size(0))
                 self.top1_ts.update(self.prec1_ts.item(), input.size(0))
                 self.top5_ts.update(self.prec5_ts.item(), input.size(0))
-
-                self.batch_time_ts.update(time.time() - self.end_ts)
-                self.end_ts = time.time()
                 self.write_net_values(train=False)
 
-        print(f"Validation completed | Top1: {self.top1_ts.avg:.2f}% | Top5: {self.top5_ts.avg:.2f}% | loss: {self.losses_ts.avg:.4f}")
+        elapsed = time.time() - epoch_start
+        print(
+            f"{datetime.now()} Epoch [{epoch + 1:03d}/{self.args.epochs:03d}] Validation: "
+            f"Loss: {self.losses_ts.avg:.4f}, Top1: {self.top1_ts.avg:.2f}, "
+            f"Top5: {self.top5_ts.avg:.2f}, Time: {elapsed:.2f}s"
+        )
         return self.losses_ts.avg, self.top1_ts.avg, self.top5_ts.avg
 
     def write_net_values(self, train):
