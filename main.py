@@ -47,7 +47,6 @@ def create_model(model_name: str):
         return CustomSkinNet(
             num_classes=model_conf["num_classes"],
             width_coef=1.5,
-            depth_coef=1.4,
             pretrained=False,
         )
 
