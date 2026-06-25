@@ -50,9 +50,9 @@ def mixup_cutmix_data(x, y, prob=0.5, mixup_alpha=0.2, cutmix_alpha=1.0):
 
 
 train_transform = transforms.Compose([
-    transforms.Resize(256, interpolation=InterpolationMode.BILINEAR),
+    transforms.Resize(320, interpolation=InterpolationMode.BILINEAR),
     transforms.RandomResizedCrop(
-        224,
+        300,
         scale=(0.75, 1.0),
         ratio=(0.8, 1.25),
         interpolation=InterpolationMode.BILINEAR,
@@ -73,8 +73,8 @@ train_transform = transforms.Compose([
 
 
 val_transform = transforms.Compose([
-    transforms.Resize(256, interpolation=InterpolationMode.BILINEAR),
-    transforms.CenterCrop(224),
+    transforms.Resize(320, interpolation=InterpolationMode.BILINEAR),
+    transforms.CenterCrop(300),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])

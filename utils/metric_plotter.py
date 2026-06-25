@@ -102,6 +102,20 @@ class MetricPlotter:
             return
         axis.axvline(best_epoch, color="#D32F2F", linestyle="--", linewidth=1.2, alpha=0.8)
 
+    @staticmethod
+    def _format_loss_name(loss_name):
+        text = str(loss_name or "")
+        normalized = text.strip().lower()
+        if normalized.startswith("cross_entropy"):
+            for marker in ("label_smooth=", "label-smooth="):
+                marker_index = normalized.find(marker)
+                if marker_index >= 0:
+                    value_start = marker_index + len(marker)
+                    value = text[value_start:].split(",", 1)[0].strip()
+                    return f"cross_entropy:label_smooth={value}"
+            return "cross_entropy"
+        return text
+
     def _plot_pair(self, axis, epochs, train_key, val_key, title, ylabel):
         train_values = self._series(train_key)
         val_values = self._series(val_key)
@@ -144,7 +158,7 @@ class MetricPlotter:
                     f"val_top1: {self.best_metrics.get('best_top1', 0.0):.4f}",
                     f"val_top5: {self.best_metrics.get('best_top5', 0.0):.4f}",
                     f"model: {self.best_metrics.get('model', '')}",
-                    f"loss: {self.best_metrics.get('loss', '')}",
+                    f"loss: {self._format_loss_name(self.best_metrics.get('loss', ''))}",
                     f"optimizer: {self.best_metrics.get('optimizer', '')}",
                     f"weight_decay: {self.best_metrics.get('weight_decay', '')}",
                     f"lr: {self.best_metrics.get('lr', '')}",
