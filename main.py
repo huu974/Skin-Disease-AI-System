@@ -37,9 +37,10 @@ def current_loss_name(args):
             f"class_balanced:"
             f"{getattr(args, 'cb_loss_type', 'focal')},"
             f"beta={getattr(args, 'cb_beta', 0.9999)},"
-            f"gamma={getattr(args, 'cb_gamma', 2.0)}"
+            f"gamma={getattr(args, 'cb_gamma', 2.0)},"
+            f"label_smooth={getattr(args, 'label_smooth', 0.0)}"
         )
-    return loss_name
+    return f"{loss_name}:label_smooth={getattr(args, 'label_smooth', 0.0)}"
 
 
 def _validate_experiment_name(experiment_name: str) -> str:

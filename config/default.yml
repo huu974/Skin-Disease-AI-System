@@ -27,10 +27,13 @@ lowest-lr: 0.00001
 lr-steps: []
 lr-gamma: 0.1
 weight-decay: 0.001
+
+# 损失函数
 loss: class_balanced
 cb-loss-type: focal
 cb-beta: 0.95
 cb-gamma: 1.0
+label-smooth: 0.15
 
 # 日志
 logterminal: true

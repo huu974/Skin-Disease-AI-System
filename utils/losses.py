@@ -36,6 +36,7 @@ class ClassBalancedLoss(nn.Module):
         loss_type: str = "focal",
         beta: float = 0.9999,
         gamma: float = 2.0,
+        label_smooth: float = 0.0,
     ):
         super().__init__()
         if loss_type not in {"focal", "sigmoid", "softmax", "cross_entropy"}:
@@ -44,10 +45,13 @@ class ClassBalancedLoss(nn.Module):
             raise ValueError("samples_per_cls length must match num_classes")
         if not 0.0 <= beta < 1.0:
             raise ValueError("beta must be in [0, 1)")
+        if not 0.0 <= label_smooth < 1.0:
+            raise ValueError("label_smooth must be in [0, 1)")
 
         self.num_classes = num_classes
         self.loss_type = loss_type
         self.gamma = gamma
+        self.label_smooth = label_smooth
 
         samples = torch.tensor(samples_per_cls, dtype=torch.float32)
         samples = samples.clamp_min(1.0)
@@ -60,9 +64,11 @@ class ClassBalancedLoss(nn.Module):
         labels = labels.long()
 
         if self.loss_type == "cross_entropy":
-            return F.cross_entropy(logits, labels, weight=self.class_weights)
+            return F.cross_entropy(logits, labels, weight=self.class_weights, label_smoothing=self.label_smooth)
 
         labels_one_hot = F.one_hot(labels, self.num_classes).float()
+        if self.label_smooth > 0.0:
+            labels_one_hot = labels_one_hot * (1.0 - self.label_smooth) + self.label_smooth / self.num_classes
         sample_weights = self.class_weights[labels].unsqueeze(1).repeat(1, self.num_classes)
 
         if self.loss_type == "focal":
@@ -83,9 +89,13 @@ class ClassBalancedLoss(nn.Module):
 def build_loss(args, train_dataset, num_classes: int) -> nn.Module:
     """Build the configured training loss."""
     loss_name = getattr(args, "loss", "cross_entropy")
+    label_smooth = float(getattr(args, "label_smooth", 0.0))
+    if not 0.0 <= label_smooth < 1.0:
+        raise ValueError("--label-smooth must be in [0, 1)")
+
     if loss_name == "cross_entropy":
-        print("Using loss: cross_entropy")
-        return nn.CrossEntropyLoss()
+        print(f"Using loss: cross_entropy (label_smooth={label_smooth})")
+        return nn.CrossEntropyLoss(label_smoothing=label_smooth)
 
     if loss_name == "class_balanced":
         samples_per_cls = get_class_counts(train_dataset, num_classes)
@@ -94,7 +104,8 @@ def build_loss(args, train_dataset, num_classes: int) -> nn.Module:
         gamma = float(getattr(args, "cb_gamma", 2.0))
         print(
             "Using loss: class_balanced "
-            f"(type={loss_type}, beta={beta}, gamma={gamma}, samples_per_cls={samples_per_cls})"
+            f"(type={loss_type}, beta={beta}, gamma={gamma}, label_smooth={label_smooth}, "
+            f"samples_per_cls={samples_per_cls})"
         )
         return ClassBalancedLoss(
             samples_per_cls=samples_per_cls,
@@ -102,6 +113,7 @@ def build_loss(args, train_dataset, num_classes: int) -> nn.Module:
             loss_type=loss_type,
             beta=beta,
             gamma=gamma,
+            label_smooth=label_smooth,
         )
 
     raise ValueError(f"Unsupported loss: {loss_name}")

@@ -184,6 +184,7 @@ def parse():
     )
     parser.add_argument("--cb-beta", default=0.85, type=float, help="class-balanced loss beta")
     parser.add_argument("--cb-gamma", default=2.0, type=float, help="class-balanced focal gamma")
+    parser.add_argument("--label-smooth", default=0.0, type=float, help="label smoothing factor")
 
     parser.add_argument("--logterminal", default=True, type=str2bool, help="mirror logs to terminal")
     parser.add_argument("--resume", default="", type=str, help="checkpoint path for resuming training")
