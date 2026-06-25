@@ -5,10 +5,11 @@ datapath-test: ./skin diseases/test
 
 # 训练参数
 model: efficientnet_b3
-batch-size: 16
+batch-size: 128
 num-workers: 8
 channels-last: true
 save-path: ./variables
+experiment-name: ''
 device: auto
 amp: true
 log-interval: 100
@@ -19,17 +20,17 @@ min-delta: 0.0
 optimizer: AdamW
 optimizer-params: {}
 epochs: 100
-lr: 0.001
+lr: 0.0005
 lr-policy: cosine_lr
-warmup-length: 0
-lowest-lr: 0.000001
+warmup-length: 5
+lowest-lr: 0.00001
 lr-steps: []
 lr-gamma: 0.1
 weight-decay: 0.001
-loss: cross_entropy
+loss: class_balanced
 cb-loss-type: focal
-cb-beta: 0.9999
-cb-gamma: 2.0
+cb-beta: 0.95
+cb-gamma: 1.0
 
 # 日志
 logterminal: true

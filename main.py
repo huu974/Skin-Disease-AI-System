@@ -41,12 +41,68 @@ def current_loss_name(args):
     return loss_name
 
 
+def _validate_experiment_name(experiment_name: str) -> str:
+    name = str(experiment_name or "").strip()
+    if not name:
+        return ""
+    invalid_name = (
+        name in {".", ".."}
+        or os.path.isabs(name)
+        or "/" in name
+        or "\\" in name
+        or os.path.basename(name) != name
+    )
+    if invalid_name:
+        raise ValueError("--experiment-name must be a directory name, not a path")
+    return name
+
+
+def _reserve_numbered_experiment_dir(root: str) -> str:
+    os.makedirs(root, exist_ok=True)
+    index = 1
+    while True:
+        path = os.path.join(root, f"{index:02d}")
+        try:
+            os.makedirs(path, exist_ok=False)
+            return path
+        except FileExistsError:
+            index += 1
+
+
+def resolve_save_path(args, model_name: str) -> str:
+    if model_name == "efficientnet_b3":
+        experiment_root = os.path.join(args.save_path, loss_output_name(args))
+        experiment_name = _validate_experiment_name(getattr(args, "experiment_name", ""))
+
+        if experiment_name:
+            save_path = os.path.join(experiment_root, experiment_name)
+            if os.path.exists(save_path) and not getattr(args, "resume", ""):
+                raise FileExistsError(
+                    f"Experiment directory already exists: {save_path}. "
+                    "Use another --experiment-name or resume from this experiment."
+                )
+            os.makedirs(save_path, exist_ok=True)
+            return save_path
+
+        return _reserve_numbered_experiment_dir(experiment_root)
+
+    output_parts = [args.save_path, model_name]
+    if getattr(args, "loss", "cross_entropy") != "cross_entropy":
+        output_parts.append(loss_output_name(args))
+    save_path = os.path.join(*output_parts)
+    os.makedirs(save_path, exist_ok=True)
+    return save_path
+
+
 def main():
     args = parse()
     device = resolve_device(args.device)
     args.device = str(device)
     if device.type != "cuda":
         args.amp = False
+
+    model_name = getattr(args, "model", "efficientnet_b3")
+    args.save_path = resolve_save_path(args, model_name)
 
     writer = init_writer(args)
     print(device_summary(device))
@@ -56,13 +112,7 @@ def main():
     train_dataloader = get_train_dataloader(args)
     val_dataloader = get_val_dataloader(args)
 
-    model_name = getattr(args, "model", "efficientnet_b3")
     os.environ["TORCH_HOME"] = os.path.join(os.path.dirname(__file__), model_conf["save_path"])
-    output_parts = [args.save_path, model_name]
-    if getattr(args, "loss", "cross_entropy") != "cross_entropy":
-        output_parts.append(loss_output_name(args))
-    args.save_path = os.path.join(*output_parts)
-    os.makedirs(args.save_path, exist_ok=True)
     print(f"save_path: {args.save_path}")
 
     model = create_model(model_name).to(device)

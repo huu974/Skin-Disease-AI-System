@@ -110,6 +110,12 @@ def parse():
     parser.add_argument("--num-workers", default=8, type=int, help="dataloader worker processes")
     parser.add_argument("--channels-last", default=True, type=str2bool, help="use channels_last memory format")
     parser.add_argument("--save-path", default="./variables", type=str, help="checkpoint output directory")
+    parser.add_argument(
+        "--experiment-name",
+        default="",
+        type=str,
+        help="experiment directory name for efficientnet_b3; auto uses 01, 02, 03...",
+    )
     parser.add_argument("--device", default="auto", type=str, help="training device: auto / cpu / cuda:0 / 0 / mlu:0")
     parser.add_argument("--amp", default=True, type=str2bool, help="use CUDA automatic mixed precision")
     parser.add_argument("--log-interval", default=100, type=int, help="print one training log line every N steps")
