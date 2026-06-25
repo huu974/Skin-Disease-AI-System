@@ -134,6 +134,9 @@ class MetricPlotter:
         self._plot_pair(axes[2, 0], epochs, "train_fps", "val_fps", "FPS", "images/sec")
         axes[2, 1].axis("off")
         if self.best_metrics:
+            lr_steps = self.best_metrics.get("lr_steps", [])
+            if isinstance(lr_steps, list):
+                lr_steps = ",".join(str(step) for step in lr_steps) or "[]"
             summary = "\n".join(
                 [
                     "Best Metrics",
@@ -142,9 +145,17 @@ class MetricPlotter:
                     f"val_top5: {self.best_metrics.get('best_top5', 0.0):.4f}",
                     f"model: {self.best_metrics.get('model', '')}",
                     f"loss: {self.best_metrics.get('loss', '')}",
+                    f"optimizer: {self.best_metrics.get('optimizer', '')}",
+                    f"weight_decay: {self.best_metrics.get('weight_decay', '')}",
+                    f"lr: {self.best_metrics.get('lr', '')}",
+                    f"lr_policy: {self.best_metrics.get('lr_policy', '')}",
+                    f"warmup_length: {self.best_metrics.get('warmup_length', '')}",
+                    f"lowest_lr: {self.best_metrics.get('lowest_lr', '')}",
+                    f"lr_steps: {lr_steps}",
+                    f"lr_gamma: {self.best_metrics.get('lr_gamma', '')}",
                 ]
             )
-            axes[2, 1].text(0.02, 0.95, summary, va="top", ha="left", fontsize=12, family="monospace")
+            axes[2, 1].text(0.02, 0.95, summary, va="top", ha="left", fontsize=10, family="monospace")
 
         fig.tight_layout(rect=(0, 0, 1, 0.97))
         tmp_path = self.image_path.with_suffix(".png.tmp")
