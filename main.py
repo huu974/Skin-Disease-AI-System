@@ -13,7 +13,7 @@ from utils.dataset import get_train_dataloader, get_val_dataloader
 from utils.device import device_summary, resolve_device
 from utils.losses import build_loss
 from utils.metric_plotter import MetricPlotter
-from utils.optimizer_Adam import CustomAdam
+from utils.optimizer_factory import build_optimizer
 from utils.outputwriter import OutputSave
 from utils.writer import init_writer
 
@@ -67,7 +67,8 @@ def main():
 
     model = create_model(model_name).to(device)
     criterion = build_loss(args, train_dataloader.dataset, model_conf["num_classes"]).to(device)
-    optimizer = CustomAdam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    optimizer = build_optimizer(model.parameters(), args)
+    print(f"optimizer: {args.optimizer}, params: {args.optimizer_params}")
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp) if device.type == "cuda" else None
     saver = OutputSave(model, args, optimizer)
     metric_plotter = MetricPlotter(args.save_path, resume=bool(args.resume))
@@ -114,6 +115,11 @@ def main():
                 saver.update_best(top1, top5, epoch)
             else:
                 no_improve_epochs += 1
+                print(
+                    f"Early stopping patience: {no_improve_epochs}/{args.patience} "
+                    f"(current Top1={top1:.4f}, best Top1={best_early_stop_top1:.4f}, "
+                    f"min_delta={args.min_delta})"
+                )
 
         saver.no_improve_epochs = no_improve_epochs
         epoch_metrics = {

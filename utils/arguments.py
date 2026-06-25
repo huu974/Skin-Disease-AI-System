@@ -20,6 +20,67 @@ def str2bool(value):
     raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
 
 
+def int_list(value):
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return [int(item) for item in value]
+    text = str(value).strip()
+    if not text:
+        return []
+    return [int(item.strip()) for item in text.split(",") if item.strip()]
+
+
+def optimizer_params(value):
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+
+    text = str(value).strip()
+    if not text:
+        return {}
+
+    try:
+        loaded = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise argparse.ArgumentTypeError(f"invalid optimizer params: {value}") from exc
+
+    if isinstance(loaded, dict):
+        return loaded
+    if loaded is not None and not isinstance(loaded, str):
+        raise argparse.ArgumentTypeError(
+            "optimizer params must be a YAML/JSON dict or comma-separated key=value pairs"
+        )
+
+    result = {}
+    for item in text.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if "=" not in item:
+            raise argparse.ArgumentTypeError(
+                "optimizer params must be a YAML/JSON dict or comma-separated key=value pairs"
+            )
+        key, raw_value = item.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise argparse.ArgumentTypeError(f"invalid optimizer param: {item}")
+        result[key] = yaml.safe_load(raw_value.strip())
+    return result
+
+
+def optimizer_param(value):
+    text = str(value).strip()
+    if "=" not in text:
+        raise argparse.ArgumentTypeError("optimizer-param must use key=value format")
+    key, raw_value = text.split("=", 1)
+    key = key.strip()
+    if not key:
+        raise argparse.ArgumentTypeError("optimizer-param key cannot be empty")
+    return key, yaml.safe_load(raw_value.strip())
+
+
 def _config_arg() -> str | None:
     for index, value in enumerate(sys.argv):
         if value == "--config" and index + 1 < len(sys.argv):
@@ -55,10 +116,52 @@ def parse():
     parser.add_argument("--patience", default=15, type=int, help="early stopping patience in validation epochs")
     parser.add_argument("--min-delta", default=0.0, type=float, help="minimum validation Top1 improvement for early stopping")
 
-    parser.add_argument("--weight-decay", "--wd", default=1e-3, type=float, help="weight decay")
-    parser.add_argument("--optimizer", default="Adam", type=str, help="optimizer type")
+    parser.add_argument("--weight-decay", "--wd", default=3e-4, type=float, help="weight decay")
+    parser.add_argument("--optimizer", default="AdamW", type=str, help="optimizer type")
+    parser.add_argument("--momentum", default=None, type=float, help="optimizer momentum, if supported")
+    parser.add_argument("--dampening", default=None, type=float, help="SGD dampening, if supported")
+    parser.add_argument("--nesterov", default=None, type=str2bool, help="enable Nesterov momentum, if supported")
+    parser.add_argument(
+        "--optimizer-params",
+        default=None,
+        type=optimizer_params,
+        help="optimizer keyword params as a YAML/JSON dict or key=value pairs",
+    )
+    parser.add_argument(
+        "--optimizer-param",
+        dest="optimizer_param_overrides",
+        action="append",
+        default=None,
+        type=optimizer_param,
+        help="single optimizer keyword param override, repeatable: --optimizer-param momentum=0.9",
+    )
     parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
-    parser.add_argument("--lr", default=1e-3, type=float, help="initial learning rate")
+    parser.add_argument("--lr", default=6e-3, type=float, help="initial learning rate")
+    parser.add_argument(
+        "--lr-policy",
+        default="cosine_lr",
+        choices=(
+            "cosine",
+            "cosine_lr",
+            "cosine_annealing",
+            "cosine_annealing_lr",
+            "multistep",
+            "multi_step",
+            "multistep_lr",
+            "multi_step_lr",
+            "constant",
+            "constant_lr",
+            "fixed",
+            "fixed_lr",
+            "none",
+        ),
+        type=str,
+        help="learning rate schedule policy",
+    )
+    parser.add_argument("--warmup-length", default=0, type=int, help="linear warmup epochs")
+    parser.add_argument("--lowest-lr", default=1e-5, type=float, help="minimum learning rate")
+    parser.add_argument("--lr-steps", default=[], type=int_list, help="comma-separated epochs for multistep lr decay")
+    parser.add_argument("--lr-gamma", default=0.1, type=float, help="multistep lr decay factor")
     parser.add_argument(
         "--loss",
         default="cross_entropy",
@@ -73,7 +176,7 @@ def parse():
         type=str,
         help="base loss used by class-balanced loss",
     )
-    parser.add_argument("--cb-beta", default=0.9999, type=float, help="class-balanced loss beta")
+    parser.add_argument("--cb-beta", default=0.85, type=float, help="class-balanced loss beta")
     parser.add_argument("--cb-gamma", default=2.0, type=float, help="class-balanced focal gamma")
 
     parser.add_argument("--logterminal", default=True, type=str2bool, help="mirror logs to terminal")
@@ -91,4 +194,9 @@ def parse():
                 normalized_config[dest] = value
         parser.set_defaults(**normalized_config)
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.optimizer_params = optimizer_params(getattr(args, "optimizer_params", {}))
+    for key, value in getattr(args, "optimizer_param_overrides", []) or []:
+        args.optimizer_params[key] = value
+    delattr(args, "optimizer_param_overrides")
+    return args

@@ -16,9 +16,15 @@ patience: 15
 min-delta: 0.0
 
 # 优化器
-optimizer: Adam
+optimizer: AdamW
+optimizer-params: {}
 epochs: 100
 lr: 0.001
+lr-policy: cosine_lr
+warmup-length: 0
+lowest-lr: 0.000001
+lr-steps: []
+lr-gamma: 0.1
 weight-decay: 0.001
 loss: cross_entropy
 cb-loss-type: focal

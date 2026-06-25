@@ -16,3 +16,8 @@ class ConvNeXtTinyClassifier(nn.Module):
 
     def forward(self, x):
         return self.model(x)
+
+
+if __name__ == "__main__":
+    model = ConvNeXtTinyClassifier(23)
+    print(model)

@@ -8,6 +8,7 @@ from torch import autocast
 
 from utils.dataset import mixup_cutmix_data
 from utils.lr_policy import LR
+from utils.optimizer_factory import optimizer_requires_closure
 
 
 class tra_val(object):
@@ -33,6 +34,7 @@ class tra_val(object):
         self.writer = writer
         self.device = device
         self.use_amp = bool(getattr(args, "amp", False) and device.type == "cuda")
+        self.optimizer_uses_closure = optimizer_requires_closure(optimizer)
 
         self.loss_vector = []
         self.acc_vector = []
@@ -47,9 +49,13 @@ class tra_val(object):
         steps_per_epoch = len(train_loader) if train_loader else (len(val_loader) if val_loader else 100)
         self.lr_policy = LR(
             base_lr=self.args.lr,
-            warmup_epoch=5,
+            warmup_epoch=getattr(self.args, "warmup_length", 0),
             epochs=self.args.epochs,
             steps_per_epoch=steps_per_epoch,
+            min_lr=getattr(self.args, "lowest_lr", 1e-6),
+            policy=getattr(self.args, "lr_policy", "cosine_lr"),
+            lr_steps=getattr(self.args, "lr_steps", []),
+            lr_gamma=getattr(self.args, "lr_gamma", 0.1),
         )
 
     def _move_batch(self, input, target):
@@ -87,19 +93,45 @@ class tra_val(object):
                 use_mixup = True
 
             amp_context = autocast(device_type="cuda") if self.use_amp else nullcontext()
-            with amp_context:
-                output = self.model(input)
-                if use_mixup:
-                    loss = lam * self.criterion(output, target_a) + (1 - lam) * self.criterion(output, target_b)
-                else:
-                    loss = self.criterion(output, target)
 
-            self.optimizer.zero_grad()
-            if self.scaler is not None:
+            def forward_loss():
+                current_output = self.model(input)
+                if use_mixup:
+                    current_loss = lam * self.criterion(current_output, target_a) + (1 - lam) * self.criterion(
+                        current_output, target_b
+                    )
+                else:
+                    current_loss = self.criterion(current_output, target)
+                return current_output, current_loss
+
+            if self.optimizer_uses_closure:
+                if self.scaler is not None:
+                    print("AMP is disabled for optimizer steps that require a closure.")
+                    self.scaler = None
+
+                closure_cache = {}
+
+                def closure():
+                    self.optimizer.zero_grad()
+                    current_output, current_loss = forward_loss()
+                    current_loss.backward()
+                    closure_cache["output"] = current_output.detach()
+                    closure_cache["loss"] = current_loss.detach()
+                    return current_loss
+
+                self.optimizer.step(closure)
+                output = closure_cache["output"]
+                loss = closure_cache["loss"]
+            elif self.scaler is not None:
+                with amp_context:
+                    output, loss = forward_loss()
+                self.optimizer.zero_grad()
                 self.scaler.scale(loss).backward()
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
             else:
+                output, loss = forward_loss()
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
