@@ -4,6 +4,7 @@ import os
 
 import torch
 import torch.backends.cudnn as cudnn
+import yaml
 
 from model.classification_factory import create_classification_model
 from train_validation import tra_val
@@ -94,6 +95,24 @@ def resolve_save_path(args, model_name: str) -> str:
     return save_path
 
 
+def _yaml_key(name: str) -> str:
+    return name.replace("_", "-")
+
+
+def save_resolved_config(args, base_save_path: str) -> str:
+    config = {}
+    for key, value in vars(args).items():
+        config[_yaml_key(key)] = base_save_path if key == "save_path" else value
+    config["resolved-save-path"] = args.save_path
+
+    config_path = os.path.join(args.save_path, "resolved_config.yaml")
+    tmp_path = f"{config_path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as file:
+        yaml.safe_dump(config, file, allow_unicode=True, sort_keys=False)
+    os.replace(tmp_path, config_path)
+    return config_path
+
+
 def main():
     args = parse()
     device = resolve_device(args.device)
@@ -102,9 +121,12 @@ def main():
         args.amp = False
 
     model_name = getattr(args, "model", "efficientnet_b3")
+    base_save_path = args.save_path
     args.save_path = resolve_save_path(args, model_name)
+    resolved_config_path = save_resolved_config(args, base_save_path)
 
     writer = init_writer(args)
+    print(f"resolved_config: {resolved_config_path}")
     print(device_summary(device))
 
     cudnn.benchmark = device.type == "cuda"
