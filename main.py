@@ -12,6 +12,7 @@ from utils.config_handler import model_conf
 from utils.dataset import get_train_dataloader, get_val_dataloader
 from utils.device import device_summary, resolve_device
 from utils.losses import build_loss
+from utils.metric_plotter import MetricPlotter
 from utils.optimizer_Adam import CustomAdam
 from utils.outputwriter import OutputSave
 from utils.writer import init_writer
@@ -19,6 +20,25 @@ from utils.writer import init_writer
 
 def create_model(model_name: str):
     return create_classification_model(model_name, num_classes=model_conf["num_classes"], pretrained=True)
+
+
+def loss_output_name(args):
+    loss_name = getattr(args, "loss", "cross_entropy")
+    if loss_name == "class_balanced":
+        return f"class_balanced_{getattr(args, 'cb_loss_type', 'focal')}"
+    return loss_name
+
+
+def current_loss_name(args):
+    loss_name = getattr(args, "loss", "cross_entropy")
+    if loss_name == "class_balanced":
+        return (
+            f"class_balanced:"
+            f"{getattr(args, 'cb_loss_type', 'focal')},"
+            f"beta={getattr(args, 'cb_beta', 0.9999)},"
+            f"gamma={getattr(args, 'cb_gamma', 2.0)}"
+        )
+    return loss_name
 
 
 def main():
@@ -38,16 +58,23 @@ def main():
 
     model_name = getattr(args, "model", "efficientnet_b3")
     os.environ["TORCH_HOME"] = os.path.join(os.path.dirname(__file__), model_conf["save_path"])
-    args.save_path = os.path.join(args.save_path, model_name)
+    output_parts = [args.save_path, model_name]
+    if getattr(args, "loss", "cross_entropy") != "cross_entropy":
+        output_parts.append(loss_output_name(args))
+    args.save_path = os.path.join(*output_parts)
+    os.makedirs(args.save_path, exist_ok=True)
+    print(f"save_path: {args.save_path}")
 
     model = create_model(model_name).to(device)
     criterion = build_loss(args, train_dataloader.dataset, model_conf["num_classes"]).to(device)
     optimizer = CustomAdam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp) if device.type == "cuda" else None
     saver = OutputSave(model, args, optimizer)
+    metric_plotter = MetricPlotter(args.save_path, resume=bool(args.resume))
 
     start_epoch = 0
     best_early_stop_top1 = 0.0
+    best_epoch = None
     no_improve_epochs = 0
     print(f"resume: {args.resume}")
     if args.resume:
@@ -57,8 +84,10 @@ def main():
         start_epoch = checkpoint["epoch"] + 1
         saver.best_top1 = checkpoint.get("best_top1", 0.0)
         saver.best_top5 = checkpoint.get("best_top5", 0.0)
+        saver.best_epoch = checkpoint.get("best_epoch")
         saver.no_improve_epochs = checkpoint.get("no_improve_epochs", 0)
         best_early_stop_top1 = saver.best_top1
+        best_epoch = saver.best_epoch
         no_improve_epochs = saver.no_improve_epochs
         print(f"Resume training from epoch {start_epoch}")
 
@@ -66,16 +95,20 @@ def main():
     validator = tra_val(model, criterion, optimizer, scaler, args, None, val_dataloader, writer, device)
 
     for epoch in range(start_epoch, args.epochs):
-        trainer.train(epoch)
+        train_metrics = trainer.train(epoch)
 
         top1 = None
         top5 = None
         improved = False
+        val_metrics = None
         if val_dataloader is not None:
-            _, top1, top5 = validator.validation(epoch)
+            val_metrics = validator.validation(epoch)
+            top1 = val_metrics["top1"]
+            top5 = val_metrics["top5"]
             improved = top1 > best_early_stop_top1 + args.min_delta
             if improved:
                 best_early_stop_top1 = top1
+                best_epoch = epoch + 1
                 no_improve_epochs = 0
                 saver.no_improve_epochs = no_improve_epochs
                 saver.update_best(top1, top5, epoch)
@@ -83,6 +116,30 @@ def main():
                 no_improve_epochs += 1
 
         saver.no_improve_epochs = no_improve_epochs
+        epoch_metrics = {
+            "epoch": epoch + 1,
+            "train_loss": train_metrics["loss"],
+            "val_loss": val_metrics["loss"] if val_metrics else None,
+            "train_top1": train_metrics["top1"],
+            "val_top1": val_metrics["top1"] if val_metrics else None,
+            "train_top5": train_metrics["top5"],
+            "val_top5": val_metrics["top5"] if val_metrics else None,
+            "lr": train_metrics["lr"],
+            "train_fps": train_metrics["fps"],
+            "val_fps": val_metrics["fps"] if val_metrics else None,
+        }
+        metric_plotter.update(
+            epoch_metrics,
+            {
+                "best_epoch": best_epoch,
+                "best_top1": saver.best_top1,
+                "best_top5": saver.best_top5,
+                "model": model_name,
+                "loss": current_loss_name(args),
+                "save_path": args.save_path,
+                "best_model_path": os.path.join(args.save_path, "best_model.pth.tar"),
+            },
+        )
         saver.save_checkpoint(epoch)
         if top1 is not None and top5 is not None:
             if no_improve_epochs >= args.patience:

@@ -11,6 +11,7 @@ class OutputSave(object):
         self.optimizer = optimizer
         self.best_top1 = 0.0
         self.best_top5 = 0.0
+        self.best_epoch = None
         self.no_improve_epochs = 0
 
     def _to_cpu(self, value):
@@ -33,10 +34,12 @@ class OutputSave(object):
             "optimizer_state_dict": self._to_cpu(self.optimizer.state_dict()),
             "best_top1": self.best_top1,
             "best_top5": self.best_top5,
+            "best_epoch": self.best_epoch,
             "no_improve_epochs": self.no_improve_epochs,
         }
 
     def _atomic_save(self, checkpoint, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         tmp_path = f"{path}.tmp"
         try:
             torch.save(checkpoint, tmp_path)
@@ -58,6 +61,8 @@ class OutputSave(object):
         previous_top1 = self.best_top1
         self.best_top1 = max(self.best_top1, top1)
         self.best_top5 = max(self.best_top5, top5)
+        if improved:
+            self.best_epoch = epoch + 1
 
         if not improved:
             return False

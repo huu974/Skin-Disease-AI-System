@@ -67,6 +67,7 @@ class tra_val(object):
 
         self.model.train()
         epoch_start = time.time()
+        sample_count = 0
         total_step = len(self.train_loader)
         log_interval = max(1, int(getattr(self.args, "log_interval", 100)))
 
@@ -75,6 +76,7 @@ class tra_val(object):
             self.assign_learning_rate(self.lr)
 
             input, target = self._move_batch(input, target)
+            sample_count += input.size(0)
 
             use_mixup = False
             lam = 1.0
@@ -118,11 +120,20 @@ class tra_val(object):
                 )
 
         elapsed = time.time() - epoch_start
+        fps = sample_count / elapsed if elapsed > 0 else 0.0
         print(
             f"Epoch [{epoch + 1:03d}/{self.args.epochs:03d}] Train Summary: "
             f"Loss: {self.losses_tr.avg:.4f}, Top1: {self.top1_tr.avg:.2f}, "
-            f"Top5: {self.top5_tr.avg:.2f}, Time: {elapsed:.2f}s"
+            f"Top5: {self.top5_tr.avg:.2f}, FPS: {fps:.2f}, Time: {elapsed:.2f}s"
         )
+        return {
+            "loss": self.losses_tr.avg,
+            "top1": self.top1_tr.avg,
+            "top5": self.top5_tr.avg,
+            "fps": fps,
+            "time": elapsed,
+            "lr": self.optimizer.param_groups[0]["lr"],
+        }
 
     def validation(self, epoch):
         self.epoch = epoch
@@ -133,10 +144,12 @@ class tra_val(object):
 
         self.model.eval()
         epoch_start = time.time()
+        sample_count = 0
 
         with torch.no_grad():
             for input, target in self.val_loader:
                 input, target = self._move_batch(input, target)
+                sample_count += input.size(0)
                 output = self.model(input)
                 loss = self.criterion(output, target)
 
@@ -149,12 +162,19 @@ class tra_val(object):
                 self.write_net_values(train=False)
 
         elapsed = time.time() - epoch_start
+        fps = sample_count / elapsed if elapsed > 0 else 0.0
         print(
             f"{datetime.now()} Epoch [{epoch + 1:03d}/{self.args.epochs:03d}] Validation: "
             f"Loss: {self.losses_ts.avg:.4f}, Top1: {self.top1_ts.avg:.2f}, "
-            f"Top5: {self.top5_ts.avg:.2f}, Time: {elapsed:.2f}s"
+            f"Top5: {self.top5_ts.avg:.2f}, FPS: {fps:.2f}, Time: {elapsed:.2f}s"
         )
-        return self.losses_ts.avg, self.top1_ts.avg, self.top5_ts.avg
+        return {
+            "loss": self.losses_ts.avg,
+            "top1": self.top1_ts.avg,
+            "top5": self.top5_ts.avg,
+            "fps": fps,
+            "time": elapsed,
+        }
 
     def write_net_values(self, train):
         if self.writer is None:

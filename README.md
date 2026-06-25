@@ -140,6 +140,10 @@ python main.py --model convnext_tiny --val True
 python main.py --model convnext_tiny --loss class_balanced --cb-loss-type focal --cb-beta 0.9999 --cb-gamma 2.0 --val True
 ```
 
+普通交叉熵权重保存到 `variables/<model>/`；Class-Balanced Loss 权重保存到 `variables/<model>/class_balanced_<type>/`。
+训练过程会在同一目录下实时覆盖更新 `training_metrics.png`，并同步写入 `training_metrics.csv`。
+最佳验证指标会同步覆盖写入 `best_metrics.json`，并在指标图中用红色虚线标出 best epoch。
+
 ### 模型评估
 ```bash
 python evaluate.py
