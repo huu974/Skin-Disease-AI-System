@@ -1,8 +1,8 @@
-"""EfficientNet-B0 + 残差注意力的 DivideMix 兼容分类模型。"""
+"""EfficientNet-B3 + 残差注意力的 DivideMix 兼容分类模型。"""
 
 import torch
 import torch.nn as nn
-from torchvision.models import EfficientNet_B0_Weights, efficientnet_b0
+from torchvision.models import EfficientNet_B3_Weights, efficientnet_b3
 
 
 class ConvBNAct(nn.Module):
@@ -173,7 +173,7 @@ class DivMixNet(nn.Module):
     """
     Args:
         num_classes: 皮肤病分类类别数量。
-        pretrained: 是否加载 ImageNet 预训练的 EfficientNet-B0 权重。
+        pretrained: 是否加载 ImageNet 预训练的 EfficientNet-B3 权重。
         dropout: 分类头 Dropout 概率。
     Return:
         无直接返回值，forward 返回分类 logits。
@@ -188,16 +188,16 @@ class DivMixNet(nn.Module):
         """
         Args:
             num_classes: 皮肤病分类类别数量。
-            pretrained: 是否加载 ImageNet 预训练的 EfficientNet-B0 权重。
+            pretrained: 是否加载 ImageNet 预训练的 EfficientNet-B3 权重。
             dropout: 分类头 Dropout 概率。
         Return:
             无直接返回值。
         """
 
         super().__init__()
-        weights = EfficientNet_B0_Weights.IMAGENET1K_V1 if pretrained else None
-        backbone = efficientnet_b0(weights=weights)
-        feature_dim = 1280
+        weights = EfficientNet_B3_Weights.IMAGENET1K_V1 if pretrained else None
+        backbone = efficientnet_b3(weights=weights)
+        feature_dim = 1536
 
         self.features = backbone.features
         self.attention = ResidualAttentionBlock(channels=feature_dim)
@@ -243,7 +243,7 @@ class DivMixNet(nn.Module):
             默认返回分类 logits；return_aux=True 时返回主辅两个 logits。
         """
 
-        # 1. EfficientNet-B0 提取轻量卷积特征。
+        # 1. EfficientNet-B3 提取卷积特征。
         x = self.features(x)
 
         # 2. 残差注意力增强关键病灶区域和通道响应。

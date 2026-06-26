@@ -25,23 +25,13 @@ def create_model(model_name: str):
 
 
 def loss_output_name(args):
-    loss_name = getattr(args, "loss", "cross_entropy")
-    if loss_name == "class_balanced":
-        return f"class_balanced_{getattr(args, 'cb_loss_type', 'focal')}"
-    return loss_name
+    _ = args
+    return "cross_entropy"
 
 
 def current_loss_name(args):
-    loss_name = getattr(args, "loss", "cross_entropy")
-    if loss_name == "class_balanced":
-        return (
-            f"class_balanced:"
-            f"{getattr(args, 'cb_loss_type', 'focal')},"
-            f"beta={getattr(args, 'cb_beta', 0.9999)},"
-            f"gamma={getattr(args, 'cb_gamma', 2.0)},"
-            f"label_smooth={getattr(args, 'label_smooth', 0.0)}"
-        )
-    return f"{loss_name}:label_smooth={getattr(args, 'label_smooth', 0.0)}"
+    _ = args
+    return "cross_entropy"
 
 
 def _validate_experiment_name(experiment_name: str) -> str:
@@ -221,18 +211,7 @@ def main():
                 "model": model_name,
                 "loss": current_loss_name(args),
                 "optimizer": args.optimizer,
-                "weight_decay": args.weight_decay,
-                "train_aug": getattr(args, "train_aug", "strong"),
-                "mixup_cutmix_prob": getattr(args, "mixup_cutmix_prob", 0.5),
-                "mixup_alpha": getattr(args, "mixup_alpha", 0.2),
-                "cutmix_alpha": getattr(args, "cutmix_alpha", 1.0),
-                "mixup_prob": getattr(args, "mixup_prob", 0.5),
                 "lr": args.lr,
-                "lr_policy": args.lr_policy,
-                "warmup_length": args.warmup_length,
-                "lowest_lr": args.lowest_lr,
-                "lr_steps": args.lr_steps,
-                "lr_gamma": args.lr_gamma,
                 "save_path": args.save_path,
                 "best_model_path": os.path.join(args.save_path, "best_model.pth.tar"),
             },

@@ -19,15 +19,13 @@ from torchvision.datasets import ImageFolder
 from model.classification_factory import (
     SUPPORTED_CLASSIFICATION_MODELS,
     create_classification_model,
-    find_checkpoint_path,
 )
 from utils.config_handler import model_conf
 from utils.config_handler import test_evaluate_conf
 from utils.dataset import build_val_transform
+from utils.device import device_summary, resolve_device
 from utils.metrics import calculate_multiclass_auc
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+from utils.path_tool import get_abs_path
 
 
 def get_transforms():
@@ -41,9 +39,23 @@ def get_transforms():
 
 
 def load_checkpoint(model, checkpoint_path, device):
-    checkpoint = torch.load(checkpoint_path, map_location=device,weights_only=False)
+    """
+    Args:
+        model: 待加载权重的分类模型。
+        checkpoint_path: 用户指定的模型权重文件路径。
+        device: 权重加载到的计算设备。
 
-    model.load_state_dict(checkpoint['model_state_dict'])
+    Return:
+        已加载权重并切换到评估模式的模型。
+    """
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    # 1. 兼容训练脚本保存的完整 checkpoint，也兼容直接保存的 state_dict。
+    if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+        state_dict = checkpoint["model_state_dict"]
+    else:
+        state_dict = checkpoint
+
+    model.load_state_dict(state_dict)
     model.eval()
     return model
 
@@ -89,14 +101,33 @@ def create_model(model_name, num_classes):
     return create_classification_model(model_name, num_classes=num_classes, pretrained=False)
 
 
-def get_model_path(model_name):
-    """Get the checkpoint path for a model."""
-    return find_checkpoint_path(model_name)
+def resolve_weight_path(weight_path):
+    """
+    Args:
+        weight_path: 用户指定的模型权重路径，支持绝对路径或项目根目录相对路径。
+
+    Return:
+        规范化后的绝对权重路径。
+    """
+    if os.path.isabs(weight_path):
+        return weight_path
+
+    return get_abs_path(weight_path)
 
 
 
 
-def main(model_name):
+def main(model_name, weight_path, device_name):
+    """
+    Args:
+        model_name: 需要评估的模型结构名称。
+        weight_path: 用户指定的模型权重文件路径。
+        device_name: 用户指定的评估设备，如 auto、cpu、cuda:0、mlu:0。
+
+    Return:
+        None
+    """
+    device = resolve_device(device_name)
     num_classes = model_conf["num_classes"]
     print(f"=" * 50)
     print(f"评估模型: {model_name}")
@@ -105,15 +136,15 @@ def main(model_name):
     
     model = create_model(model_name, num_classes)
     model = model.to(device)
-    print(f"设备: {device}")
+    print(device_summary(device))
     
     test_dataset = ImageFolder(root=test_evaluate_conf["eval_data"], transform=get_transforms())
     test_loader = DataLoader(test_dataset, batch_size=test_evaluate_conf["batch_size"], shuffle=False)
     print(f"数据集大小: {len(test_dataset)}")
     print(f"类别数: {len(test_dataset.classes)}")
     
-    model_path = get_model_path(model_name)
-    if os.path.exists(model_path):
+    model_path = resolve_weight_path(weight_path)
+    if os.path.isfile(model_path):
         model = load_checkpoint(model, model_path, device)
         print(f"已加载模型权重: {model_path}")
     else:
@@ -154,6 +185,18 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='efficientnet_b3',
                         choices=SUPPORTED_CLASSIFICATION_MODELS,
                         help='模型名称')
+    parser.add_argument(
+        '--weight-path',
+        type=str,
+        required=True,
+        help='模型权重文件路径，如 variables/efficientnet_b3/best_model.pth.tar'
+    )
+    parser.add_argument(
+        '--device',
+        type=str,
+        default='auto',
+        help='评估设备: auto / cpu / cuda:0 / 0 / mlu:0'
+    )
     args = parser.parse_args()
     
-    main(args.model)
+    main(args.model, args.weight_path, args.device)

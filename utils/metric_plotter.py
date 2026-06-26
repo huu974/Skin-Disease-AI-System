@@ -122,12 +122,6 @@ class MetricPlotter:
         text = str(loss_name or "")
         normalized = text.strip().lower()
         if normalized.startswith("cross_entropy"):
-            for marker in ("label_smooth=", "label-smooth="):
-                marker_index = normalized.find(marker)
-                if marker_index >= 0:
-                    value_start = marker_index + len(marker)
-                    value = text[value_start:].split(",", 1)[0].strip()
-                    return f"cross_entropy:label_smooth={value}"
             return "cross_entropy"
         return text
 
@@ -165,9 +159,6 @@ class MetricPlotter:
         self._plot_pair(axes[2, 0], epochs, "train_auc", "val_auc", "AUC", "macro OvR AUC")
         axes[2, 1].axis("off")
         if self.best_metrics:
-            lr_steps = self.best_metrics.get("lr_steps", [])
-            if isinstance(lr_steps, list):
-                lr_steps = ",".join(str(step) for step in lr_steps) or "[]"
             summary = "\n".join(
                 [
                     "Best Metrics",
@@ -178,18 +169,7 @@ class MetricPlotter:
                     f"model: {self.best_metrics.get('model', '')}",
                     f"loss: {self._format_loss_name(self.best_metrics.get('loss', ''))}",
                     f"optimizer: {self.best_metrics.get('optimizer', '')}",
-                    f"weight_decay: {self.best_metrics.get('weight_decay', '')}",
-                    f"train_aug: {self.best_metrics.get('train_aug', '')}",
-                    f"mixup_cutmix_prob: {self.best_metrics.get('mixup_cutmix_prob', '')}",
-                    f"mixup_alpha: {self.best_metrics.get('mixup_alpha', '')}",
-                    f"cutmix_alpha: {self.best_metrics.get('cutmix_alpha', '')}",
-                    f"mixup_prob: {self.best_metrics.get('mixup_prob', '')}",
                     f"lr: {self.best_metrics.get('lr', '')}",
-                    f"lr_policy: {self.best_metrics.get('lr_policy', '')}",
-                    f"warmup_length: {self.best_metrics.get('warmup_length', '')}",
-                    f"lowest_lr: {self.best_metrics.get('lowest_lr', '')}",
-                    f"lr_steps: {lr_steps}",
-                    f"lr_gamma: {self.best_metrics.get('lr_gamma', '')}",
                 ]
             )
             axes[2, 1].text(0.02, 0.95, summary, va="top", ha="left", fontsize=10, family="monospace")
