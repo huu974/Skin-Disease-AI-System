@@ -9,6 +9,7 @@ from model.ConvNeXtTiny import ConvNeXtTinyClassifier
 from model.EfficientNetB3ResidualAttentionLNN import EfficientNetB3ResidualAttentionLNN
 from model.PanDerm import MyModel
 from model.ResNet50 import ResNet50Classifier
+from model.SkinLiqNet import SkinLiqNet
 from model.custom_skin_net import CustomSkinNet
 from utils.config_handler import model_conf, test_evaluate_conf
 from utils.path_tool import get_abs_path
@@ -20,6 +21,7 @@ SUPPORTED_CLASSIFICATION_MODELS = (
     "resnet50",
     "custom_skin_net",
     "convnext_tiny",
+    "skinliq",
 )
 
 
@@ -29,6 +31,7 @@ MODEL_DISPLAY_NAMES = {
     "resnet50": "ResNet50",
     "custom_skin_net": "Custom Skin Net",
     "convnext_tiny": "ConvNeXt-Tiny",
+    "skinliq": "SkinLiqNet",
 }
 
 
@@ -56,6 +59,9 @@ def create_classification_model(model_name: str, num_classes: int | None = None,
 
     if model_name == "convnext_tiny":
         return ConvNeXtTinyClassifier(num_classes=num_classes, pretrained=pretrained)
+
+    if model_name == "skinliq":
+        return SkinLiqNet(num_classes=num_classes, pretrained=pretrained)
 
     raise ValueError(f"Unsupported model: {model_name}")
 
