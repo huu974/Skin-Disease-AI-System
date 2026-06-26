@@ -6,7 +6,10 @@ from pathlib import Path
 from torchvision.models import EfficientNet_B3_Weights, efficientnet_b3
 
 from model.ConvNeXtTiny import ConvNeXtTinyClassifier
+from model.DivMixNet import DivMixNet
+from model.EffVitNet import EffVitNet
 from model.EfficientNetB3ResidualAttentionLNN import EfficientNetB3ResidualAttentionLNN
+from model.MedFuseNet import MedFuseNet
 from model.PanDerm import MyModel
 from model.ResNet50 import ResNet50Classifier
 from model.SkinLiqNet import SkinLiqNet
@@ -22,6 +25,9 @@ SUPPORTED_CLASSIFICATION_MODELS = (
     "custom_skin_net",
     "convnext_tiny",
     "skinliq",
+    "effvit",
+    "medfuse",
+    "divmix",
 )
 
 
@@ -32,6 +38,9 @@ MODEL_DISPLAY_NAMES = {
     "custom_skin_net": "Custom Skin Net",
     "convnext_tiny": "ConvNeXt-Tiny",
     "skinliq": "SkinLiqNet",
+    "effvit": "EffVitNet",
+    "medfuse": "MedFuseNet",
+    "divmix": "DivMixNet",
 }
 
 
@@ -62,6 +71,15 @@ def create_classification_model(model_name: str, num_classes: int | None = None,
 
     if model_name == "skinliq":
         return SkinLiqNet(num_classes=num_classes, pretrained=pretrained)
+
+    if model_name == "effvit":
+        return EffVitNet(num_classes=num_classes, pretrained=pretrained)
+
+    if model_name == "medfuse":
+        return MedFuseNet(num_classes=num_classes, pretrained=pretrained)
+
+    if model_name == "divmix":
+        return DivMixNet(num_classes=num_classes, pretrained=pretrained)
 
     raise ValueError(f"Unsupported model: {model_name}")
 
