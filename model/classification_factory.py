@@ -6,6 +6,7 @@ from pathlib import Path
 from torchvision.models import EfficientNet_B3_Weights, efficientnet_b3
 
 from model.ConvNeXtTiny import ConvNeXtTinyClassifier
+from model.EfficientNetB3ResidualAttentionLNN import EfficientNetB3ResidualAttentionLNN
 from model.PanDerm import MyModel
 from model.ResNet50 import ResNet50Classifier
 from model.custom_skin_net import CustomSkinNet
@@ -15,6 +16,7 @@ from utils.path_tool import get_abs_path
 
 SUPPORTED_CLASSIFICATION_MODELS = (
     "efficientnet_b3",
+    "efficientnet_b3_residual_attention_lnn",
     "resnet50",
     "custom_skin_net",
     "convnext_tiny",
@@ -23,6 +25,7 @@ SUPPORTED_CLASSIFICATION_MODELS = (
 
 MODEL_DISPLAY_NAMES = {
     "efficientnet_b3": "EfficientNet-B3",
+    "efficientnet_b3_residual_attention_lnn": "EfficientNet-B3 + Residual Attention + LNN",
     "resnet50": "ResNet50",
     "custom_skin_net": "Custom Skin Net",
     "convnext_tiny": "ConvNeXt-Tiny",
@@ -37,6 +40,9 @@ def create_classification_model(model_name: str, num_classes: int | None = None,
     if model_name == "efficientnet_b3":
         backbone = efficientnet_b3(weights=EfficientNet_B3_Weights.IMAGENET1K_V1 if pretrained else None)
         return MyModel(model=backbone, num_classes=num_classes).model_classifier()
+
+    if model_name == "efficientnet_b3_residual_attention_lnn":
+        return EfficientNetB3ResidualAttentionLNN(num_classes=num_classes, pretrained=pretrained)
 
     if model_name == "resnet50":
         return ResNet50Classifier(num_classes=num_classes, pretrained=pretrained)

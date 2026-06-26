@@ -11,6 +11,7 @@ class OutputSave(object):
         self.optimizer = optimizer
         self.best_top1 = 0.0
         self.best_top5 = 0.0
+        self.best_auc = None
         self.best_epoch = None
         self.no_improve_epochs = 0
 
@@ -34,6 +35,7 @@ class OutputSave(object):
             "optimizer_state_dict": self._to_cpu(self.optimizer.state_dict()),
             "best_top1": self.best_top1,
             "best_top5": self.best_top5,
+            "best_auc": self.best_auc,
             "best_epoch": self.best_epoch,
             "no_improve_epochs": self.no_improve_epochs,
         }
@@ -56,13 +58,24 @@ class OutputSave(object):
         self._atomic_save(self._build_checkpoint(epoch), path)
         print(f"### Checkpoint Saved: {path} (epoch {epoch + 1}) ###")
 
-    def update_best(self, top1, top5, epoch):
+    def update_best(self, top1, top5, epoch, auc=None):
+        """
+        Args:
+            top1: Current validation Top1 accuracy.
+            top5: Current validation Top5 accuracy.
+            epoch: Zero-based current epoch index.
+            auc: Current validation AUC value.
+
+        Return:
+            True if the best model checkpoint is updated, otherwise False.
+        """
         improved = top1 > self.best_top1
         previous_top1 = self.best_top1
         self.best_top1 = max(self.best_top1, top1)
         self.best_top5 = max(self.best_top5, top5)
         if improved:
             self.best_epoch = epoch + 1
+            self.best_auc = auc
 
         if not improved:
             return False

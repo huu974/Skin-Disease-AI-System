@@ -1,4 +1,5 @@
 classification_model: "variables/efficientnet_b3/best_model.pth.tar"
+classification_model_efficientnet_b3_residual_attention_lnn: "variables/efficientnet_b3_residual_attention_lnn/best_model.pth.tar"
 classification_model_custom: "variables/custom_skin_net/best_model.pth.tar"
 classification_model_custom_skin_net: "variables/custom_skin_net/best_model.pth.tar"
 classification_model_convnext_tiny: "variables/convnext_tiny/best_model.pth.tar"

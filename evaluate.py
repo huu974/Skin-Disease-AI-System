@@ -14,7 +14,6 @@ from sklearn.metrics import (
     f1_score,
     accuracy_score
 )
-from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from model.classification_factory import (
@@ -24,18 +23,21 @@ from model.classification_factory import (
 )
 from utils.config_handler import model_conf
 from utils.config_handler import test_evaluate_conf
+from utils.dataset import build_val_transform
+from utils.metrics import calculate_multiclass_auc
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def get_transforms():
-    return transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.CenterCrop((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    """
+    Args:
+
+    Return:
+        Evaluation transform aligned with validation input size.
+    """
+    return build_val_transform()
 
 
 def load_checkpoint(model, checkpoint_path, device):
@@ -125,6 +127,8 @@ def main(model_name):
     precision = precision_score(labels, preds, average='macro', zero_division=0)
     recall = recall_score(labels, preds, average='macro', zero_division=0)
     f1 = f1_score(labels, preds, average='macro')
+    auc = calculate_multiclass_auc(labels, scores)
+    auc_text = f"{auc:.4f}" if auc is not None else "N/A"
     params = sum(p.numel() for p in model.parameters())
     print(f"\n========== 评估结果 ==========")
     print(f"参数量 (parameters):{params}")
@@ -132,6 +136,7 @@ def main(model_name):
     print(f"精确率 (Precision): {precision:.4f}")
     print(f"召回率 (Recall):    {recall:.4f}")
     print(f"F1-score:          {f1:.4f}")
+    print(f"AUC:               {auc_text}")
     print(f"=" * 50)
     
     cm = confusion_matrix(labels, preds)

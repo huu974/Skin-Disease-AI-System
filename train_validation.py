@@ -8,6 +8,7 @@ from torch import autocast
 
 from utils.dataset import mixup_cutmix_data
 from utils.lr_policy import LR
+from utils.metrics import calculate_multiclass_auc
 from utils.optimizer_factory import optimizer_requires_closure
 
 
@@ -70,6 +71,8 @@ class tra_val(object):
         self.losses_tr = AverageMeter()
         self.top1_tr = AverageMeter()
         self.top5_tr = AverageMeter()
+        all_train_labels = []
+        all_train_scores = []
 
         self.model.train()
         epoch_start = time.time()
@@ -148,6 +151,8 @@ class tra_val(object):
             self.step += 1
 
             self.prec1_tr, self.prec5_tr = self.accuracy(output, target, topk=(1, 5))
+            all_train_labels.extend(target.detach().cpu().numpy())
+            all_train_scores.extend(torch.softmax(output.detach(), dim=1).cpu().numpy())
             self.losses_tr.update(loss.item(), input.size(0))
             self.top1_tr.update(self.prec1_tr.item(), input.size(0))
             self.top5_tr.update(self.prec5_tr.item(), input.size(0))
@@ -163,15 +168,18 @@ class tra_val(object):
 
         elapsed = time.time() - epoch_start
         fps = sample_count / elapsed if elapsed > 0 else 0.0
+        auc = calculate_multiclass_auc(all_train_labels, all_train_scores)
+        auc_text = f"{auc:.4f}" if auc is not None else "N/A"
         print(
             f"Epoch [{epoch + 1:03d}/{self.args.epochs:03d}] Train Summary: "
             f"Loss: {self.losses_tr.avg:.4f}, Top1: {self.top1_tr.avg:.2f}, "
-            f"Top5: {self.top5_tr.avg:.2f}, FPS: {fps:.2f}, Time: {elapsed:.2f}s"
+            f"Top5: {self.top5_tr.avg:.2f}, AUC: {auc_text}, FPS: {fps:.2f}, Time: {elapsed:.2f}s"
         )
         return {
             "loss": self.losses_tr.avg,
             "top1": self.top1_tr.avg,
             "top5": self.top5_tr.avg,
+            "auc": auc,
             "fps": fps,
             "time": elapsed,
             "lr": self.optimizer.param_groups[0]["lr"],
@@ -183,6 +191,8 @@ class tra_val(object):
         self.losses_ts = AverageMeter()
         self.top1_ts = AverageMeter()
         self.top5_ts = AverageMeter()
+        all_val_labels = []
+        all_val_scores = []
 
         self.model.eval()
         epoch_start = time.time()
@@ -197,6 +207,8 @@ class tra_val(object):
 
                 self.prec1_ts, self.prec5_ts = self.accuracy(output, target, topk=(1, 5))
                 self.loss_ts = loss
+                all_val_labels.extend(target.detach().cpu().numpy())
+                all_val_scores.extend(torch.softmax(output.detach(), dim=1).cpu().numpy())
 
                 self.losses_ts.update(self.loss_ts.item(), input.size(0))
                 self.top1_ts.update(self.prec1_ts.item(), input.size(0))
@@ -205,15 +217,18 @@ class tra_val(object):
 
         elapsed = time.time() - epoch_start
         fps = sample_count / elapsed if elapsed > 0 else 0.0
+        auc = calculate_multiclass_auc(all_val_labels, all_val_scores)
+        auc_text = f"{auc:.4f}" if auc is not None else "N/A"
         print(
             f"{datetime.now()} Epoch [{epoch + 1:03d}/{self.args.epochs:03d}] Validation: "
             f"Loss: {self.losses_ts.avg:.4f}, Top1: {self.top1_ts.avg:.2f}, "
-            f"Top5: {self.top5_ts.avg:.2f}, FPS: {fps:.2f}, Time: {elapsed:.2f}s"
+            f"Top5: {self.top5_ts.avg:.2f}, AUC: {auc_text}, FPS: {fps:.2f}, Time: {elapsed:.2f}s"
         )
         return {
             "loss": self.losses_ts.avg,
             "top1": self.top1_ts.avg,
             "top5": self.top5_ts.avg,
+            "auc": auc,
             "fps": fps,
             "time": elapsed,
         }

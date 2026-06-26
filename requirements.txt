@@ -1,6 +1,7 @@
 # Core
 torch>=2.1.0
 torchvision>=0.16.0
+ncps>=1.0.1
 numpy>=1.26.0
 # Image
 Pillow>=10.0.0

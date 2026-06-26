@@ -20,6 +20,7 @@ from utils.writer import init_writer
 
 
 def create_model(model_name: str):
+    os.environ['TORCH_HOME'] = os.path.join(os.path.dirname(__file__), '..', model_conf["save_path"])
     return create_classification_model(model_name, num_classes=model_conf["num_classes"], pretrained=True)
 
 
@@ -158,6 +159,7 @@ def main():
         start_epoch = checkpoint["epoch"] + 1
         saver.best_top1 = checkpoint.get("best_top1", 0.0)
         saver.best_top5 = checkpoint.get("best_top5", 0.0)
+        saver.best_auc = checkpoint.get("best_auc")
         saver.best_epoch = checkpoint.get("best_epoch")
         saver.no_improve_epochs = checkpoint.get("no_improve_epochs", 0)
         best_early_stop_top1 = saver.best_top1
@@ -185,7 +187,7 @@ def main():
                 best_epoch = epoch + 1
                 no_improve_epochs = 0
                 saver.no_improve_epochs = no_improve_epochs
-                saver.update_best(top1, top5, epoch)
+                saver.update_best(top1, top5, epoch, val_metrics.get("auc"))
             else:
                 no_improve_epochs += 1
                 print(
@@ -203,6 +205,8 @@ def main():
             "val_top1": val_metrics["top1"] if val_metrics else None,
             "train_top5": train_metrics["top5"],
             "val_top5": val_metrics["top5"] if val_metrics else None,
+            "train_auc": train_metrics["auc"],
+            "val_auc": val_metrics["auc"] if val_metrics else None,
             "lr": train_metrics["lr"],
             "train_fps": train_metrics["fps"],
             "val_fps": val_metrics["fps"] if val_metrics else None,
@@ -213,6 +217,7 @@ def main():
                 "best_epoch": best_epoch,
                 "best_top1": saver.best_top1,
                 "best_top5": saver.best_top5,
+                "best_auc": saver.best_auc,
                 "model": model_name,
                 "loss": current_loss_name(args),
                 "optimizer": args.optimizer,

@@ -19,6 +19,8 @@ METRIC_COLUMNS = (
     "val_top1",
     "train_top5",
     "val_top5",
+    "train_auc",
+    "val_auc",
     "lr",
     "train_fps",
     "val_fps",
@@ -91,6 +93,19 @@ class MetricPlotter:
     def _series(self, key):
         return [row.get(key) for row in self.history]
 
+    @staticmethod
+    def _format_optional_float(value):
+        """
+        Args:
+            value: Numeric value or None.
+
+        Return:
+            Formatted numeric string, or N/A when value is unavailable.
+        """
+        if value is None:
+            return "N/A"
+        return f"{float(value):.4f}"
+
     def _best_epoch(self):
         if not self.best_metrics:
             return None
@@ -119,7 +134,8 @@ class MetricPlotter:
     def _plot_pair(self, axis, epochs, train_key, val_key, title, ylabel):
         train_values = self._series(train_key)
         val_values = self._series(val_key)
-        axis.plot(epochs, train_values, marker="o", linewidth=1.8, label="train")
+        if any(value is not None for value in train_values):
+            axis.plot(epochs, train_values, marker="o", linewidth=1.8, label="train")
         if any(value is not None for value in val_values):
             axis.plot(epochs, val_values, marker="o", linewidth=1.8, label="val")
         self._draw_best_epoch(axis)
@@ -127,7 +143,8 @@ class MetricPlotter:
         axis.set_xlabel("epoch")
         axis.set_ylabel(ylabel)
         axis.grid(True, alpha=0.25)
-        axis.legend()
+        if axis.get_legend_handles_labels()[0]:
+            axis.legend()
 
     def _write_plot(self):
         epochs = self._series("epoch")
@@ -145,7 +162,7 @@ class MetricPlotter:
         axes[1, 1].grid(True, alpha=0.25)
         self._draw_best_epoch(axes[1, 1])
 
-        self._plot_pair(axes[2, 0], epochs, "train_fps", "val_fps", "FPS", "images/sec")
+        self._plot_pair(axes[2, 0], epochs, "train_auc", "val_auc", "AUC", "macro OvR AUC")
         axes[2, 1].axis("off")
         if self.best_metrics:
             lr_steps = self.best_metrics.get("lr_steps", [])
@@ -157,6 +174,7 @@ class MetricPlotter:
                     f"epoch: {self.best_metrics.get('best_epoch')}",
                     f"val_top1: {self.best_metrics.get('best_top1', 0.0):.4f}",
                     f"val_top5: {self.best_metrics.get('best_top5', 0.0):.4f}",
+                    f"val_auc: {self._format_optional_float(self.best_metrics.get('best_auc'))}",
                     f"model: {self.best_metrics.get('model', '')}",
                     f"loss: {self._format_loss_name(self.best_metrics.get('loss', ''))}",
                     f"optimizer: {self.best_metrics.get('optimizer', '')}",
