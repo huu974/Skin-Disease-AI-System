@@ -67,6 +67,7 @@ chroma_db/
 # ML datasets, checkpoints, and experiment outputs
 data/
 skin diseases/
+train-new-raw/
 model/
 !model/
 model/*

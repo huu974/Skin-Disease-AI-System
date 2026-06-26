@@ -76,6 +76,10 @@ class tra_val(object):
         sample_count = 0
         total_step = len(self.train_loader)
         log_interval = max(1, int(getattr(self.args, "log_interval", 100)))
+        mixup_cutmix_prob = float(getattr(self.args, "mixup_cutmix_prob", 0.5))
+        mixup_prob = float(getattr(self.args, "mixup_prob", 0.5))
+        mixup_alpha = float(getattr(self.args, "mixup_alpha", 0.2))
+        cutmix_alpha = float(getattr(self.args, "cutmix_alpha", 1.0))
 
         for i, (input, target) in enumerate(self.train_loader, start=1):
             self.lr = self.lr_policy.apply_lr(epoch, i - 1)
@@ -88,8 +92,14 @@ class tra_val(object):
             lam = 1.0
             target_a = target
             target_b = target
-            if np.random.rand() < 0.5:
-                input, target_a, target_b, lam = mixup_cutmix_data(input, target)
+            if mixup_cutmix_prob > 0.0 and np.random.rand() < mixup_cutmix_prob:
+                input, target_a, target_b, lam = mixup_cutmix_data(
+                    input,
+                    target,
+                    mixup_prob=mixup_prob,
+                    mixup_alpha=mixup_alpha,
+                    cutmix_alpha=cutmix_alpha,
+                )
                 use_mixup = True
 
             amp_context = autocast(device_type="cuda") if self.use_amp else nullcontext()

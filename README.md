@@ -184,7 +184,7 @@ npm run dev
 ### 启动后端
 先进入后端目录
 ```bash
-$env:DASHSCOPE_API_KEY="sk-b371ebde92284d9ebf00b32645ea6edd"
+$env:DASHSCOPE_API_KEY=
 python main.py
 ```
 

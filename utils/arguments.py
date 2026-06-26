@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from model.classification_factory import SUPPORTED_CLASSIFICATION_MODELS
+from utils.dataset import TRAIN_AUGMENTATION_PROFILES
 
 
 def str2bool(value):
@@ -81,6 +82,20 @@ def optimizer_param(value):
     return key, yaml.safe_load(raw_value.strip())
 
 
+def _bounded_float(parser, args, name, lower=0.0, upper=1.0):
+    value = float(getattr(args, name))
+    if not lower <= value <= upper:
+        parser.error(f"--{name.replace('_', '-')} must be in [{lower}, {upper}]")
+    setattr(args, name, value)
+
+
+def _positive_float(parser, args, name):
+    value = float(getattr(args, name))
+    if value <= 0.0:
+        parser.error(f"--{name.replace('_', '-')} must be > 0")
+    setattr(args, name, value)
+
+
 def _config_arg() -> str | None:
     for index, value in enumerate(sys.argv):
         if value == "--config" and index + 1 < len(sys.argv):
@@ -106,6 +121,26 @@ def parse():
     parser.add_argument("--val", default=False, type=str2bool, help="enable validation dataloader")
     parser.add_argument("--datapath-val", default="./skin diseases/val", type=str, help="validation dataset path")
     parser.add_argument("--datapath-test", default="./skin diseases/test", type=str, help="test dataset path")
+    parser.add_argument(
+        "--train-aug",
+        default="strong",
+        type=str,
+        help=f"training augmentation profile: {', '.join(TRAIN_AUGMENTATION_PROFILES)}",
+    )
+    parser.add_argument(
+        "--mixup-cutmix-prob",
+        default=0.5,
+        type=float,
+        help="probability of applying batch-level mixup/cutmix; set 0 to disable",
+    )
+    parser.add_argument("--mixup-alpha", default=0.2, type=float, help="mixup beta distribution alpha")
+    parser.add_argument("--cutmix-alpha", default=1.0, type=float, help="cutmix beta distribution alpha")
+    parser.add_argument(
+        "--mixup-prob",
+        default=0.5,
+        type=float,
+        help="when mixup/cutmix is applied, probability of choosing mixup instead of cutmix",
+    )
     parser.add_argument("--batch-size", default=16, type=int, help="batch size")
     parser.add_argument("--num-workers", default=8, type=int, help="dataloader worker processes")
     parser.add_argument("--channels-last", default=True, type=str2bool, help="use channels_last memory format")
@@ -206,4 +241,11 @@ def parse():
     for key, value in getattr(args, "optimizer_param_overrides", []) or []:
         args.optimizer_params[key] = value
     delattr(args, "optimizer_param_overrides")
+    args.train_aug = str(args.train_aug).strip().lower().replace("-", "_")
+    if args.train_aug not in TRAIN_AUGMENTATION_PROFILES:
+        parser.error(f"--train-aug must be one of: {', '.join(TRAIN_AUGMENTATION_PROFILES)}")
+    _bounded_float(parser, args, "mixup_cutmix_prob")
+    _bounded_float(parser, args, "mixup_prob")
+    _positive_float(parser, args, "mixup_alpha")
+    _positive_float(parser, args, "cutmix_alpha")
     return args

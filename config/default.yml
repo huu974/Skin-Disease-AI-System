@@ -2,6 +2,11 @@
 datapath-train: ./skin diseases/train-new
 datapath-val: ./skin diseases/val
 datapath-test: ./skin diseases/test
+train-aug: noise_robust
+mixup-cutmix-prob: 0.25
+mixup-alpha: 0.2
+cutmix-alpha: 0.7
+mixup-prob: 0.5
 
 # 训练参数
 model: efficientnet_b3
