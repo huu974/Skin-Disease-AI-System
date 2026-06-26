@@ -73,8 +73,7 @@ train-new-raw/
 model/
 !model/
 model/*
-!model/ConvNeXtTiny.py
-!model/classification_factory.py
+!model/*.py
 variables/
 *.pt
 *.pth
